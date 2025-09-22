@@ -34,7 +34,7 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 ## 📸 Screenshot
 
 ### Trading Bot Interface
-![Trading Bot Interface](https://raw.githubusercontent.com/Zavn20/Galaswap-trading-bot/main/screenshot-main-interface.png)
+![Trading Bot Interface](https://raw.githubusercontent.com/Zavn20/Galaswap-trading-bot/main/image.png)
 *Clean, intuitive interface with real-time data and trading controls*
 
 ## 🛠️ Installation
