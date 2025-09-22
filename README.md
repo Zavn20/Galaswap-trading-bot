@@ -31,13 +31,11 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **Dynamic Pricing**: Real-time GALA/USD conversion
 - **Fallback System**: Robust pricing for unavailable pairs
 
-## 📸 Screenshots
+## 📸 Screenshot
 
-![Trading Bot Interface](https://via.placeholder.com/800x400/1a1a1a/ffffff?text=Trading+Bot+Interface)
-*Clean, intuitive interface with real-time data*
-
-![Trading Statistics](https://via.placeholder.com/800x400/2a2a2a/ffffff?text=Trading+Statistics)
-*Comprehensive trading metrics and performance tracking*
+### Trading Bot Interface
+![Trading Bot Interface](https://raw.githubusercontent.com/Zavn20/Galaswap-trading-bot/main/screenshot-main-interface.png)
+*Clean, intuitive interface with real-time data and trading controls*
 
 ## 🛠️ Installation
 
@@ -50,8 +48,8 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/galaswap-trading-bot.git
-   cd galaswap-trading-bot
+   git clone https://github.com/Zavn20/Galaswap-trading-bot.git
+   cd Galaswap-trading-bot
    ```
 
 2. **Install dependencies**
@@ -192,9 +190,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/galaswap-trading-bot/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/galaswap-trading-bot/discussions)
-- **Documentation**: [Wiki](https://github.com/yourusername/galaswap-trading-bot/wiki)
+- **Issues**: [GitHub Issues](https://github.com/Zavn20/Galaswap-trading-bot/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Zavn20/Galaswap-trading-bot/discussions)
+- **Documentation**: [Wiki](https://github.com/Zavn20/Galaswap-trading-bot/wiki)
 
 ## 🙏 Acknowledgments
 
