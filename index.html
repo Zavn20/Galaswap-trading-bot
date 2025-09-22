@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GalaSwap Trading Bot</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 0; 
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            color: #fff; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 60px; 
+            padding: 40px 0;
+        }
+        .header h1 { 
+            color: #4CAF50; 
+            font-size: 4em; 
+            margin: 0; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .header p { 
+            font-size: 1.4em; 
+            opacity: 0.9; 
+            margin: 20px 0;
+        }
+        .status-badges {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .status-badge { 
+            display: inline-block; 
+            background: linear-gradient(45deg, #4CAF50, #45a049); 
+            color: white; 
+            padding: 8px 20px; 
+            border-radius: 25px; 
+            font-size: 0.9em; 
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .features { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 30px; 
+            margin: 60px 0; 
+        }
+        .feature { 
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e); 
+            padding: 30px; 
+            border-radius: 15px; 
+            border-left: 5px solid #4CAF50;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        .feature h3 { 
+            color: #4CAF50; 
+            margin-top: 0; 
+            font-size: 1.4em;
+        }
+        .cta { 
+            text-align: center; 
+            margin: 60px 0; 
+            padding: 40px;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border-radius: 15px;
+        }
+        .btn { 
+            display: inline-block; 
+            background: linear-gradient(45deg, #4CAF50, #45a049); 
+            color: white; 
+            padding: 15px 35px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            margin: 10px; 
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .btn:hover { 
+            background: linear-gradient(45deg, #45a049, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        .updates { 
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e); 
+            padding: 30px; 
+            border-radius: 15px; 
+            margin: 40px 0;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .updates h3 {
+            color: #4CAF50;
+            margin-top: 0;
+        }
+        .updates ul {
+            list-style: none;
+            padding: 0;
+        }
+        .updates li {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+        .updates li:before {
+            content: "✅ ";
+            color: #4CAF50;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px 0;
+            border-top: 1px solid #333;
+            opacity: 0.7;
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2.5em; }
+            .features { grid-template-columns: 1fr; }
+            .status-badges { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 GalaSwap Trading Bot</h1>
+            <p>Automated trading for the GalaChain ecosystem</p>
+            <div class="status-badges">
+                <span class="status-badge">✅ Production Ready</span>
+                <span class="status-badge">🚀 Real Trading</span>
+                <span class="status-badge">💾 Persistent Storage</span>
+                <span class="status-badge">💰 USD Pricing</span>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <h3>⚡ Real Trading</h3>
+                <p>Execute actual on-chain swaps using the official GalaChain SDK. No simulation - these are real transactions with real value.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🎯 Multiple Modes</h3>
+                <p>Choose from Conservative, Trade Cap, or Competition modes depending on your risk tolerance and trading goals.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>💾 Persistent Storage</h3>
+                <p>Your trading statistics, portfolio data, and bot configuration are automatically saved and restored across sessions.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>💰 Smart Pricing</h3>
+                <p>All prices displayed in USD with accurate stablecoin pegging. GUSDC is correctly priced at $1.00 USD.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🛡️ Security</h3>
+                <p>Private keys handled securely, comprehensive error handling, and slippage protection for safe trading.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📊 Analytics</h3>
+                <p>Comprehensive trading metrics including total trades, P&L, win rate, and performance tracking.</p>
+            </div>
+        </div>
+        
+        <div class="cta">
+            <h2>Ready to Start Trading?</h2>
+            <p>Get started with automated trading on GalaChain in minutes.</p>
+            <a href="https://github.com/yourusername/galaswap-trading-bot" class="btn">View on GitHub</a>
+            <a href="https://github.com/yourusername/galaswap-trading-bot#installation" class="btn">Quick Start</a>
+        </div>
+        
+        <div class="updates">
+            <h3>📈 Recent Updates</h3>
+            <ul>
+                <li>Fixed SDK 400 errors for reliable trading</li>
+                <li>Implemented comprehensive persistent storage</li>
+                <li>Corrected USD pricing with stablecoin pegging</li>
+                <li>Added real transaction history filtering</li>
+                <li>Enhanced error handling and user experience</li>
+                <li>Added multiple trading modes for different risk levels</li>
+                <li>Implemented real-time portfolio tracking</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>Built with ❤️ for the GalaChain ecosystem</p>
+            <p>Last updated: September 22, 2025 | Version 2.0.0</p>
+        </div>
+    </div>
+</body>
+</html>

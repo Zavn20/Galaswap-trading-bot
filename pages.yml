@@ -1,0 +1,125 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm install @gala-chain/gswap-sdk
+        
+    - name: Build documentation
+      run: |
+        # Create a simple index.html for GitHub Pages
+        cat > index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>GalaSwap Trading Bot</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #1a1a1a; color: #fff; }
+                .container { max-width: 1200px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 40px; }
+                .header h1 { color: #4CAF50; font-size: 3em; margin: 0; }
+                .header p { font-size: 1.2em; opacity: 0.8; }
+                .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 40px 0; }
+                .feature { background: #2a2a2a; padding: 20px; border-radius: 10px; border-left: 4px solid #4CAF50; }
+                .feature h3 { color: #4CAF50; margin-top: 0; }
+                .cta { text-align: center; margin: 40px 0; }
+                .btn { display: inline-block; background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px; }
+                .btn:hover { background: #45a049; }
+                .status { background: #2a2a2a; padding: 20px; border-radius: 10px; margin: 20px 0; }
+                .status-badge { display: inline-block; background: #4CAF50; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9em; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🤖 GalaSwap Trading Bot</h1>
+                    <p>Automated trading for the GalaChain ecosystem</p>
+                </div>
+                
+                <div class="status">
+                    <span class="status-badge">✅ Production Ready</span>
+                    <span class="status-badge">🚀 Real Trading</span>
+                    <span class="status-badge">💾 Persistent Storage</span>
+                    <span class="status-badge">💰 USD Pricing</span>
+                </div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <h3>⚡ Real Trading</h3>
+                        <p>Execute actual on-chain swaps using the official GalaChain SDK. No simulation - these are real transactions with real value.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>🎯 Multiple Modes</h3>
+                        <p>Choose from Conservative, Trade Cap, or Competition modes depending on your risk tolerance and trading goals.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>💾 Persistent Storage</h3>
+                        <p>Your trading statistics, portfolio data, and bot configuration are automatically saved and restored across sessions.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>💰 Smart Pricing</h3>
+                        <p>All prices displayed in USD with accurate stablecoin pegging. GUSDC is correctly priced at $1.00 USD.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>🛡️ Security</h3>
+                        <p>Private keys handled securely, comprehensive error handling, and slippage protection for safe trading.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3>📊 Analytics</h3>
+                        <p>Comprehensive trading metrics including total trades, P&L, win rate, and performance tracking.</p>
+                    </div>
+                </div>
+                
+                <div class="cta">
+                    <h2>Ready to Start Trading?</h2>
+                    <p>Get started with automated trading on GalaChain in minutes.</p>
+                    <a href="https://github.com/yourusername/galaswap-trading-bot" class="btn">View on GitHub</a>
+                    <a href="https://github.com/yourusername/galaswap-trading-bot#installation" class="btn">Quick Start</a>
+                </div>
+                
+                <div class="status">
+                    <h3>📈 Recent Updates</h3>
+                    <ul>
+                        <li>✅ Fixed SDK 400 errors for reliable trading</li>
+                        <li>✅ Implemented comprehensive persistent storage</li>
+                        <li>✅ Corrected USD pricing with stablecoin pegging</li>
+                        <li>✅ Added real transaction history filtering</li>
+                        <li>✅ Enhanced error handling and user experience</li>
+                    </ul>
+                </div>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./
