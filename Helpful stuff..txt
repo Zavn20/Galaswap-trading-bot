@@ -1,0 +1,166 @@
+Here is some information that could help: 
+
+
+🔑 Base URLs
+
+API Base URL: https://dex-backend-test1.defi.gala.com
+
+WebSocket (real-time events): wss://bundle-backend-test1.defi.gala.com
+
+📊 Price & Market Data
+
+Get single token price:
+GET /v1/trade/price?token=GALA$Unit$none$none
+
+Get multiple token prices:
+POST /v1/trade/price-multiple
+
+Get historical prices:
+GET /price-oracle/fetch-price?token=GALA$Unit$none$none
+
+Subscribe/unsubscribe to price updates (WebSocket style):
+POST /price-oracle/subscribe-token
+
+🔄 Trading
+
+Get a quote for swap:
+GET /v1/trade/quote
+
+Generate swap payload (to sign & send):
+POST /v1/trade/swap
+
+Execute signed payload (Bundle API):
+POST /v1/trade/bundle
+
+Check transaction status:
+GET /v1/trade/transaction-status?id=<tx_id>
+
+💧 Liquidity (LPs)
+
+Estimate add liquidity:
+GET /v1/trade/add-liq-estimate
+
+Estimate remove liquidity:
+GET /v1/trade/remove-liq-estimate
+
+Generate add liquidity payload:
+POST /v1/trade/liquidity
+
+Generate remove liquidity payload:
+DELETE /v1/trade/liquidity
+
+Generate create pool payload:
+POST /v1/trade/create-pool
+
+Collect fees from position:
+POST /v1/trade/collect
+
+📦 Positions
+
+Get single position:
+GET /v1/trade/position
+
+Get all user positions:
+GET /v1/trade/positions?user=eth|0x...
+
+Get pool details:
+GET /v1/trade/pool
+
+🌉 Bridging (GalaChain ↔ Ethereum / Solana / TON)
+
+List supported bridges:
+GET /v1/connect/bridge-configurations?searchprefix=GALA
+
+Create bridge request (out):
+POST /v1/connect/bridge/request
+
+Submit bridge request (step 1):
+POST /v1/connect/RequestTokenBridgeOut
+
+Finalize bridge (step 2):
+POST /v1/connect/BridgeTokenOut
+
+Check bridge status:
+POST /v1/connect/bridge/status
+
+✍️ Payload Signing
+
+Payloads (swap, liquidity, collect, etc.) must be signed with your GalaChain private key before sending to /bundle.
+
+Recommended: Use @gala-chain/api SDK (npm install @gala-chain/api).
+
+Or manually implement signing with elliptic, keccak256, and deterministic JSON serialization.
+
+🧩 Token Wrappers
+
+On GalaChain, tokens use wrapped identifiers like:
+
+GUSDC = Wrapped USDC
+
+GWETH = Wrapped ETH
+
+GWBTC = Wrapped BTC
+
+This is because GalaChain requires its own native representations for cross-chain tokens.
+
+How “wallet connection” works on GalaChain (for bots)
+
+For trading on GalaSwap (DEX), you don’t “connect” a wallet via an RPC provider the way you would for MetaMask pop-ups. Your bot:
+
+Calls a payload-generator endpoint (e.g., /v1/trade/swap) to get an operation payload that already includes a uniqueKey.
+
+Signs that exact payload object with your GalaChain private key (65-byte Secp256k1 signature over a deterministic JSON of the payload, excluding any signature field).
+
+Submits the signed payload to the Bundle API /v1/trade/bundle with:
+
+payload: the unsigned payload object you got in step 1
+
+type: the operation type (e.g., "swap", "addLiquidity", "collect")
+
+signature: your 65-byte hex signature
+
+user: your GalaChain user address (format: eth|0x...)
+
+
+Tracks the result via /v1/trade/transaction-status or the WebSocket at wss://bundle-backend-test1.defi.gala.com.
+
+import fetch from "node-fetch";
+import { signatures } from "@gala-chain/api";
+import crypto from "crypto";
+
+const API = "https://dex-backend-test1.defi.gala.com";
+const PRIVATE_KEY = process.env.GALA_PRIVATE_KEY!;        // 0x...
+const USER = process.env.GALA_USER_ADDR!;                 // e.g., eth|0xabc...
+// 1) Build swap payload
+const swapPayload = await (await fetch(`${API}/v1/trade/swap`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    tokenIn:  { collection:"GALA",  category:"Unit", type:"none", additionalKey:"none" },
+    tokenOut: { collection:"GUSDC", category:"Unit", type:"none", additionalKey:"none" },
+    amountIn: "0.1",
+    fee: 10000,
+    sqrtPriceLimit: "0",          // use "0" for no limit (or set a real limit)
+    amountInMaximum: "0.11",      // slippage controls
+    amountOutMinimum: "0.095"
+  })
+})).json();
+
+// 2) Sign the payload object (as returned) – do not mutate fields
+const payloadObject = swapPayload.data; // contains token0, token1, fee, amount, zeroForOne, sqrtPriceLimit, amountInMaximum, amountOutMinimum, uniqueKey
+const keyBuf = signatures.normalizePrivateKey(PRIVATE_KEY);
+const signature = signatures.getSignature(payloadObject, keyBuf);
+
+// 3) Bundle (execute)
+const bundleResp = await (await fetch(`${API}/v1/trade/bundle`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    payload: payloadObject,
+    type: "swap",
+    signature,
+    user: USER
+  })
+})).json();
+
+console.log("Bundle response:", bundleResp);

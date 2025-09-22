@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GalaChain API Endpoint Tester</title>
+</head>
+<body>
+    <h1>GalaChain API Endpoint Tester</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testEndpoint(url, method = 'GET', body = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(url, options);
+                return {
+                    url: url,
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    headers: Object.fromEntries(response.headers.entries())
+                };
+            } catch (error) {
+                return {
+                    url: url,
+                    error: error.message,
+                    type: error.name
+                };
+            }
+        }
+        
+        async function testAllEndpoints() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Testing Endpoints...</h2>';
+            
+            const endpoints = [
+                // Gateway endpoints
+                'https://gateway-mainnet.galachain.com/api/asset/token-contract',
+                'https://gateway-mainnet.galachain.com/api/asset/dexv3-contract',
+                'https://gateway-mainnet.galachain.com/api/address/089018e67E35BeAAb3F7c28cb0d64dBA04D9268F',
+                
+                // DEX Backend endpoints
+                'https://dex-backend-prod1.defi.gala.com/bundle',
+                'https://dex-backend-prod1.defi.gala.com/v1/trade/quote',
+                'https://dex-backend-prod1.defi.gala.com/v1/trade/bundle',
+                
+                // Bundler endpoints
+                'https://bundle-backend-prod1.defi.gala.com/bundle',
+                
+                // Test with fee endpoints
+                'https://gateway-mainnet.galachain.com/api/asset/token-contract/fee',
+                'https://dex-backend-prod1.defi.gala.com/bundle/fee',
+            ];
+            
+            let results = [];
+            
+            for (const endpoint of endpoints) {
+                console.log(`Testing: ${endpoint}`);
+                const result = await testEndpoint(endpoint);
+                results.push(result);
+                
+                // Add delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Display results
+            let html = '<h2>Test Results:</h2>';
+            results.forEach(result => {
+                if (result.error) {
+                    html += `<div style="color: red;"><strong>${result.url}</strong><br>Error: ${result.error} (${result.type})</div><br>`;
+                } else {
+                    const color = result.ok ? 'green' : 'orange';
+                    html += `<div style="color: ${color};"><strong>${result.url}</strong><br>Status: ${result.status} ${result.statusText}<br>OK: ${result.ok}</div><br>`;
+                }
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Start testing when page loads
+        testAllEndpoints();
+    </script>
+</body>
+</html>
