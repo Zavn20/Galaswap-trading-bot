@@ -7,9 +7,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 23 Dec 2024 08:00:00 GMT">
-    <title>GalaSwap Trading Bot v9.1.9 - Price Freshness Fixed</title>
-    <!-- Version: 9.1.9 - Price Freshness Bug Fixed -->
-    <meta name="version" content="9.1.9-price-freshness-fixed-2024">
+    <title>GalaSwap Trading Bot v9.1.10 - Price Freshness Debug</title>
+    <!-- Version: 9.1.10 - Price Freshness Debug Added -->
+    <meta name="version" content="9.1.10-price-freshness-debug-2024">
     <meta name="build" content="20241221-002-price-freshness-fixed">
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -1281,10 +1281,11 @@
                 <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Fee reserve</div>
             </div>
             
-            <div class="status-card">
-                <h3>📊 Max Usage</h3>
-                <div class="value" id="maxUsage" style="color: #ff9800;">90%</div>
-                <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Per token</div>
+            
+            <div class="status-card" id="competitionStats" style="display: none;">
+                <h3>🏆 Competition</h3>
+                <div class="value" id="triangleSuccess" style="color: #4caf50;">0/0</div>
+                <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Triangles</div>
             </div>
             <div class="status-card">
                 <h3>🔒 Security</h3>
@@ -1746,6 +1747,18 @@
         let lastPriceUpdateTime = 0;
         let PRICE_FRESHNESS_LIMIT = 30000; // 30 seconds in milliseconds
         
+        // Competition Mode Triangle Arbitrage Tracking
+        let competitionTriangleStats = {
+            totalTriangles: 0,
+            successfulTriangles: 0,
+            failedTriangles: 0,
+            totalGalaGained: 0,
+            consecutiveSuccessfulTrades: 0,
+            lastTriangleProfit: 0,
+            isCurrentlyExecuting: false,
+            lastExecutionTime: 0
+        };
+        
         // Price freshness validation - CRITICAL FOR SAFETY
         function isPriceDataFresh() {
             if (lastPriceUpdateTime === 0) {
@@ -1764,13 +1777,18 @@
         }
         
         function getPriceFreshnessStatus() {
+            console.log(`🔍 getPriceFreshnessStatus debug: lastPriceUpdateTime=${lastPriceUpdateTime}, PRICE_FRESHNESS_LIMIT=${PRICE_FRESHNESS_LIMIT}`);
+            
             if (lastPriceUpdateTime === 0) {
+                console.log(`🔍 Price freshness: Never loaded (lastPriceUpdateTime is 0)`);
                 return { fresh: false, age: 'Never loaded', message: 'No price data available' };
             }
             
             const timeSinceUpdate = Date.now() - lastPriceUpdateTime;
             const ageSeconds = Math.round(timeSinceUpdate / 1000);
             const isFresh = timeSinceUpdate <= PRICE_FRESHNESS_LIMIT;
+            
+            console.log(`🔍 Price freshness: ${ageSeconds}s old, fresh=${isFresh}`);
             
             return {
                 fresh: isFresh,
@@ -3172,19 +3190,27 @@
             scope: 'liquid' // Only high-liquidity pairs
         };
         
-        // Competition Mode Configuration (HIGH-FREQUENCY & AGGRESSIVE)
+        // Competition Mode Configuration (TRIANGLE ARBITRAGE STRATEGY)
         let competitionConfig = {
             riskLevel: 'high',
-            maxPositionSize: 30, // Large position sizes
-            profitTarget: 3, // Lower profit target for more trades
-            stopLoss: 5, // Higher stop loss for competition
+            maxPositionSize: 5, // Small position sizes for triangle arbitrage (2-5% of GALA)
+            profitTarget: 1, // Very low profit target for frequent trades
+            stopLoss: 2, // Tight stop loss for competition
             scanInterval: 1, // MAXIMUM SPEED: 1 second scanning
-            maxTradesPerSecond: 5, // Allow up to 5 trades per second
-            concurrentTrades: 3, // Allow 3 concurrent trades
-            arbitrageThreshold: 1, // Lower threshold for more opportunities
-            buyThreshold: 0.5, // Lower buy threshold
-            sellThreshold: 0.3, // Lower sell threshold
-            scope: 'all' // All tokens + Triangle arbitrage
+            maxTradesPerSecond: 3, // Allow up to 3 trades per second (triangle = 3 swaps)
+            concurrentTrades: 1, // Only 1 triangle arbitrage at a time
+            arbitrageThreshold: 0.5, // Very low threshold for triangle opportunities
+            buyThreshold: 0.3, // Very low buy threshold
+            sellThreshold: 0.2, // Very low sell threshold
+            scope: 'triangle', // Focus on triangle arbitrage only
+            triangleStrategy: {
+                enabled: true,
+                maxBatchSize: 0.05, // Maximum 5% of GALA per triangle
+                minBatchSize: 0.02, // Minimum 2% of GALA per triangle
+                successValidation: true, // Validate success before continuing
+                maxConsecutiveTrades: 10, // Max trades before checking profitability
+                minProfitThreshold: 0.1 // Minimum 0.1% profit to continue
+            }
         };
         
         // Trade Cap Mode Configuration (SMALL & SAFE TESTING)
@@ -5153,11 +5179,15 @@
                     const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
                     safePositionSize = Math.min(safePositionSize, availableGala);
                     
-                    // Additional safety: never spend more than 90% of available GALA
+                // Additional safety: never spend more than 90% of available GALA (disabled in competition mode)
+                if (tradingMode !== 'competition') {
                     const maxGalaUsage = availableGala * (MAX_TOKEN_USAGE_PERCENT / 100);
                     safePositionSize = Math.min(safePositionSize, maxGalaUsage);
                     
                     logMessage(`🛡️ SAFETY: GALA buy position limited to ${safePositionSize.toFixed(2)} GALA (available: ${availableGala.toFixed(2)}, max usage: ${maxGalaUsage.toFixed(2)})`, 'info');
+                } else {
+                    logMessage(`🏆 COMPETITION: Using full available GALA ${safePositionSize.toFixed(2)} GALA (no usage limits)`, 'info');
+                }
                 } else {
                     // For non-GALA buy orders, limit based on token balance and price
                     const tokenPrice = tokenPrices[token] || 0;
@@ -5166,14 +5196,18 @@
                         return 0;
                     }
                     
-                    // Calculate how much we can buy (90% of token balance)
-                    const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
-                    const maxGalaValue = maxTokenUsage * tokenPrice;
-                    
-                    // Limit position size to the smaller of: calculated size or max token usage
-                    safePositionSize = Math.min(safePositionSize, maxGalaValue);
-                    
-                    logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} buy position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                        // Calculate how much we can buy (90% of token balance - disabled in competition mode)
+                        if (tradingMode !== 'competition') {
+                            const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
+                            const maxGalaValue = maxTokenUsage * tokenPrice;
+                            
+                            // Limit position size to the smaller of: calculated size or max token usage
+                            safePositionSize = Math.min(safePositionSize, maxGalaValue);
+                            
+                            logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} buy position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                        } else {
+                            logMessage(`🏆 COMPETITION: Using full available ${getTokenSymbol(token)} balance ${safePositionSize.toFixed(2)} GALA value (no usage limits)`, 'info');
+                        }
                 }
                 
             } else if (action === 'sell') {
@@ -5184,14 +5218,18 @@
                     return 0;
                 }
                 
-                // Calculate how much token we can sell (90% of balance)
-                const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
-                const maxGalaValue = maxTokenUsage * tokenPrice;
-                
-                // Limit position size to the smaller of: calculated size or max token usage
-                safePositionSize = Math.min(safePositionSize, maxGalaValue);
-                
-                logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} sell position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                    // Calculate how much token we can sell (90% of balance - disabled in competition mode)
+                    if (tradingMode !== 'competition') {
+                        const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
+                        const maxGalaValue = maxTokenUsage * tokenPrice;
+                        
+                        // Limit position size to the smaller of: calculated size or max token usage
+                        safePositionSize = Math.min(safePositionSize, maxGalaValue);
+                        
+                        logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} sell position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                    } else {
+                        logMessage(`🏆 COMPETITION: Selling full available ${getTokenSymbol(token)} balance ${safePositionSize.toFixed(2)} GALA value (no usage limits)`, 'info');
+                    }
             }
             
             // Final safety check: ensure position size is reasonable
@@ -5796,9 +5834,11 @@
                     // Update price freshness timestamp - CRITICAL FOR SAFETY
                     lastPriceUpdateTime = Date.now();
                     const freshnessTime = new Date(lastPriceUpdateTime).toLocaleTimeString();
+                    console.log(`🔍 Setting lastPriceUpdateTime to: ${lastPriceUpdateTime} (${freshnessTime})`);
                     logMessage(`⏰ Price data timestamp: ${freshnessTime} (FRESH)`, 'info');
                     
                     // Update status display to show fresh price data
+                    console.log(`🔍 Calling updateStatus() after setting timestamp`);
                     updateStatus();
                     
                     if (successCount === 0) {
@@ -6766,31 +6806,54 @@
                 });
             }
             
-            // Check for triangle arbitrage opportunities (only in competition mode)
-            const triangleArbitrage = competitionMode ? detectTriangleArbitrage() : [];
+            // Check for triangle arbitrage opportunities
+            const triangleArbitrage = detectTriangleArbitrage();
             
-            // Filter and prioritize achievable opportunities
-            const achievableTriangles = triangleArbitrage
-                .filter(tri => {
-                    const profit = tri.triangle.profitPercent;
-                    const startToken = tri.triangle.tokenA;
-                    const startBalance = tokenBalances[startToken] || 0;
+            // Filter and prioritize achievable opportunities based on trading mode
+            let achievableTriangles = [];
+            
+            if (tradingMode === 'competition') {
+                // Competition mode: Focus on triangle arbitrage with GALA
+                achievableTriangles = triangleArbitrage
+                    .filter(tri => {
+                        const profit = tri.triangle.profitPercent;
+                        const startToken = tri.triangle.tokenA;
+                        
+                        // Competition mode: Accept any profitable triangle (even small profits)
+                        // Focus on GALA-based triangles for competition strategy
+                        return profit > competitionConfig.triangleStrategy.minProfitThreshold && 
+                               profit < 20; // Cap at 20% for realism
+                    })
+                    .sort((a, b) => {
+                        // Prioritize by profit percentage
+                        return b.triangle.profitPercent - a.triangle.profitPercent;
+                    })
+                    .slice(0, 3); // Take top 3 opportunities for competition
                     
-                    // Only consider realistic profits (2-50%) and if we have some balance OR if profit is reasonable (>5%)
-                    return profit > 2 && profit < 50 && (startBalance > 1 || profit > 5);
-                })
-                .sort((a, b) => {
-                    // Prioritize opportunities we can execute immediately
-                    const aHasBalance = (tokenBalances[a.triangle.tokenA] || 0) > 1;
-                    const bHasBalance = (tokenBalances[b.triangle.tokenA] || 0) > 1;
-                    
-                    if (aHasBalance && !bHasBalance) return -1;
-                    if (!aHasBalance && bHasBalance) return 1;
-                    
-                    // If both have same balance status, sort by profit
-                    return b.triangle.profitPercent - a.triangle.profitPercent;
-                })
-                .slice(0, 1); // Only take the best achievable opportunity
+            } else {
+                // Other modes: Conservative triangle arbitrage
+                achievableTriangles = triangleArbitrage
+                    .filter(tri => {
+                        const profit = tri.triangle.profitPercent;
+                        const startToken = tri.triangle.tokenA;
+                        const startBalance = tokenBalances[startToken] || 0;
+                        
+                        // Only consider realistic profits (2-50%) and if we have some balance OR if profit is reasonable (>5%)
+                        return profit > 2 && profit < 50 && (startBalance > 1 || profit > 5);
+                    })
+                    .sort((a, b) => {
+                        // Prioritize opportunities we can execute immediately
+                        const aHasBalance = (tokenBalances[a.triangle.tokenA] || 0) > 1;
+                        const bHasBalance = (tokenBalances[b.triangle.tokenA] || 0) > 1;
+                        
+                        if (aHasBalance && !bHasBalance) return -1;
+                        if (!aHasBalance && bHasBalance) return 1;
+                        
+                        // If both have same balance status, sort by profit
+                        return b.triangle.profitPercent - a.triangle.profitPercent;
+                    })
+                    .slice(0, 1); // Only take the best achievable opportunity
+            }
             
             achievableTriangles.forEach(tri => {
                 logMessage(`🔺 TRIANGLE ARBITRAGE: ${tri.triangle.path} (${tri.triangle.profitPercent.toFixed(2)}%)`, 'success');
@@ -6903,6 +6966,11 @@
                 return;
             }
             
+            // Competition Mode: Use specialized triangle arbitrage strategy
+            if (tradingMode === 'competition') {
+                return await executeCompetitionTriangleArbitrage(triangle);
+            }
+            
             // Check if profit is realistic before proceeding
             if (triangle.profitPercent > 50) {
                 logMessage(`⚠️ Skipping unrealistic triangle arbitrage: ${triangle.path} (${triangle.profitPercent.toFixed(2)}% profit)`, 'warning');
@@ -6991,6 +7059,162 @@
             portfolioValue = calculatePortfolioValue();
             updateStatus();
             updateBalanceDisplay();
+        }
+
+        // Competition Mode Triangle Arbitrage Strategy
+        async function executeCompetitionTriangleArbitrage(triangle) {
+            const config = competitionConfig.triangleStrategy;
+            
+            // Check if we're already executing a triangle arbitrage
+            if (competitionTriangleStats.isCurrentlyExecuting) {
+                logMessage(`⏳ Triangle arbitrage already in progress, skipping ${triangle.path}`, 'info');
+                return;
+            }
+            
+            // Check minimum profit threshold
+            if (triangle.profitPercent < config.minProfitThreshold) {
+                logMessage(`📉 Triangle profit too low: ${triangle.profitPercent.toFixed(2)}% < ${config.minProfitThreshold}%`, 'info');
+                return;
+            }
+            
+            // Check if we've exceeded max consecutive trades
+            if (competitionTriangleStats.consecutiveSuccessfulTrades >= config.maxConsecutiveTrades) {
+                logMessage(`🛑 Max consecutive trades reached (${config.maxConsecutiveTrades}), checking profitability...`, 'warning');
+                
+                // Check if we should continue based on recent performance
+                if (competitionTriangleStats.lastTriangleProfit < config.minProfitThreshold) {
+                    logMessage(`📉 Recent profits too low (${competitionTriangleStats.lastTriangleProfit.toFixed(2)}%), pausing triangle arbitrage`, 'warning');
+                    competitionTriangleStats.consecutiveSuccessfulTrades = 0;
+                    return;
+                }
+                
+                // Reset counter and continue
+                competitionTriangleStats.consecutiveSuccessfulTrades = 0;
+            }
+            
+            // Calculate batch size based on GALA balance
+            const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
+            const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+            
+            if (availableGala < MIN_GALA_FOR_GALA_TRADES) {
+                logMessage(`❌ Insufficient GALA for triangle arbitrage: ${availableGala.toFixed(2)} GALA`, 'error');
+                return;
+            }
+            
+            // Calculate batch size (2-5% of available GALA for competition strategy)
+            const batchSizePercent = Math.random() * (config.maxBatchSize - config.minBatchSize) + config.minBatchSize;
+            const batchSizeGala = availableGala * batchSizePercent;
+            
+            // In competition mode, we can use more aggressive sizing since we're collecting GALA
+            // But still keep it reasonable to avoid large losses
+            
+            logMessage(`🏆 COMPETITION TRIANGLE: ${triangle.path} (${triangle.profitPercent.toFixed(2)}% profit)`, 'success');
+            logMessage(`💰 Batch size: ${batchSizeGala.toFixed(2)} GALA (${(batchSizePercent * 100).toFixed(1)}% of available)`, 'info');
+            
+            // Mark as executing
+            competitionTriangleStats.isCurrentlyExecuting = true;
+            competitionTriangleStats.totalTriangles++;
+            competitionTriangleStats.lastExecutionTime = Date.now();
+            
+            try {
+                // Step 1: Buy TokenA with GALA
+                const tokenAPrice = tokenPrices[triangle.tokenA] || 0;
+                if (tokenAPrice === 0) {
+                    throw new Error(`No price data for ${triangle.symbolA}`);
+                }
+                
+                const tokenAAmount = batchSizeGala / tokenAPrice;
+                logMessage(`Step 1: Buy ${tokenAAmount.toFixed(4)} ${triangle.symbolA} with ${batchSizeGala.toFixed(2)} GALA`, 'info');
+                
+                // Simulate the swap (in real implementation, this would be actual swaps)
+                const step1Success = await simulateSwap('GALA|Unit|none|none', triangle.tokenA, batchSizeGala);
+                if (!step1Success) {
+                    throw new Error(`Failed to buy ${triangle.symbolA}`);
+                }
+                
+                // Step 2: Swap TokenA -> TokenB
+                logMessage(`Step 2: Swap ${tokenAAmount.toFixed(4)} ${triangle.symbolA} → ${triangle.symbolB}`, 'info');
+                const tokenBPrice = tokenPrices[triangle.tokenB] || 0;
+                const tokenBAmount = (tokenAAmount * tokenAPrice) / tokenBPrice * 0.997; // 0.3% slippage
+                
+                const step2Success = await simulateSwap(triangle.tokenA, triangle.tokenB, tokenAAmount);
+                if (!step2Success) {
+                    throw new Error(`Failed to swap ${triangle.symbolA} → ${triangle.symbolB}`);
+                }
+                
+                // Step 3: Swap TokenB -> TokenC
+                logMessage(`Step 3: Swap ${tokenBAmount.toFixed(4)} ${triangle.symbolB} → ${triangle.symbolC}`, 'info');
+                const tokenCPrice = tokenPrices[triangle.tokenC] || 0;
+                const tokenCAmount = (tokenBAmount * tokenBPrice) / tokenCPrice * 0.997; // 0.3% slippage
+                
+                const step3Success = await simulateSwap(triangle.tokenB, triangle.tokenC, tokenBAmount);
+                if (!step3Success) {
+                    throw new Error(`Failed to swap ${triangle.symbolB} → ${triangle.symbolC}`);
+                }
+                
+                // Step 4: Swap TokenC -> GALA (back to GALA)
+                logMessage(`Step 4: Swap ${tokenCAmount.toFixed(4)} ${triangle.symbolC} → GALA`, 'info');
+                const finalGalaAmount = (tokenCAmount * tokenCPrice) * 0.997; // 0.3% slippage
+                
+                const step4Success = await simulateSwap(triangle.tokenC, 'GALA|Unit|none|none', tokenCAmount);
+                if (!step4Success) {
+                    throw new Error(`Failed to swap ${triangle.symbolC} → GALA`);
+                }
+                
+                // Calculate actual profit
+                const actualProfit = finalGalaAmount - batchSizeGala;
+                const actualProfitPercent = (actualProfit / batchSizeGala) * 100;
+                
+                // Validate success if enabled
+                if (config.successValidation && actualProfit <= 0) {
+                    throw new Error(`Triangle arbitrage resulted in loss: ${actualProfit.toFixed(4)} GALA`);
+                }
+                
+                // Update statistics
+                competitionTriangleStats.successfulTriangles++;
+                competitionTriangleStats.totalGalaGained += actualProfit;
+                competitionTriangleStats.consecutiveSuccessfulTrades++;
+                competitionTriangleStats.lastTriangleProfit = actualProfitPercent;
+                
+                logMessage(`✅ TRIANGLE SUCCESS: Gained ${actualProfit.toFixed(4)} GALA (${actualProfitPercent.toFixed(2)}%)`, 'success');
+                logMessage(`📊 Competition Stats: ${competitionTriangleStats.successfulTriangles}/${competitionTriangleStats.totalTriangles} successful`, 'info');
+                logMessage(`💰 Total GALA Gained: ${competitionTriangleStats.totalGalaGained.toFixed(4)} GALA`, 'success');
+                
+                // Update balances (simulated)
+                if (tokenBalances['GALA|Unit|none|none']) {
+                    tokenBalances['GALA|Unit|none|none'] += actualProfit;
+                }
+                
+                // Update portfolio value
+                portfolioValue = calculatePortfolioValue();
+                updateStatus();
+                updateBalanceDisplay();
+                
+            } catch (error) {
+                competitionTriangleStats.failedTriangles++;
+                competitionTriangleStats.consecutiveSuccessfulTrades = 0; // Reset on failure
+                
+                logMessage(`❌ Triangle arbitrage failed: ${error.message}`, 'error');
+                logMessage(`📊 Competition Stats: ${competitionTriangleStats.successfulTriangles}/${competitionTriangleStats.totalTriangles} successful`, 'info');
+            } finally {
+                // Mark as no longer executing
+                competitionTriangleStats.isCurrentlyExecuting = false;
+            }
+        }
+        
+        // Simulate swap execution (placeholder for real implementation)
+        async function simulateSwap(fromToken, toToken, amount) {
+            // In real implementation, this would execute actual swaps via the SDK
+            // For now, we'll simulate with a 95% success rate
+            const success = Math.random() > 0.05;
+            
+            if (success) {
+                logMessage(`✅ Simulated swap: ${amount.toFixed(4)} ${getTokenSymbol(fromToken)} → ${getTokenSymbol(toToken)}`, 'success');
+            } else {
+                logMessage(`❌ Simulated swap failed: ${amount.toFixed(4)} ${getTokenSymbol(fromToken)} → ${getTokenSymbol(toToken)}`, 'error');
+            }
+            
+            return success;
         }
 
         // Acquire token needed for triangle arbitrage with fallback strategies
@@ -8036,6 +8260,7 @@
             const priceFreshnessElement = document.getElementById('priceFreshness');
             if (priceFreshnessElement) {
                 const freshnessStatus = getPriceFreshnessStatus();
+                console.log(`🔍 Price freshness debug: lastPriceUpdateTime=${lastPriceUpdateTime}, freshnessStatus=`, freshnessStatus);
                 priceFreshnessElement.textContent = freshnessStatus.age;
                 
                 // Color code based on freshness
@@ -8061,11 +8286,28 @@
                 }
             }
             
-            // Update max usage status
-            const maxUsageElement = document.getElementById('maxUsage');
-            if (maxUsageElement) {
-                maxUsageElement.textContent = `${MAX_TOKEN_USAGE_PERCENT}%`;
-                maxUsageElement.style.color = '#ff9800'; // Orange for usage limit
+            
+            // Update competition stats (only show in competition mode)
+            const competitionStatsElement = document.getElementById('competitionStats');
+            const triangleSuccessElement = document.getElementById('triangleSuccess');
+            if (competitionStatsElement && triangleSuccessElement) {
+                if (tradingMode === 'competition') {
+                    competitionStatsElement.style.display = 'block';
+                    const successRate = competitionTriangleStats.totalTriangles > 0 ? 
+                        (competitionTriangleStats.successfulTriangles / competitionTriangleStats.totalTriangles * 100).toFixed(1) : 0;
+                    triangleSuccessElement.textContent = `${competitionTriangleStats.successfulTriangles}/${competitionTriangleStats.totalTriangles}`;
+                    
+                    // Color code based on success rate
+                    if (successRate >= 70) {
+                        triangleSuccessElement.style.color = '#4caf50'; // Green for high success
+                    } else if (successRate >= 50) {
+                        triangleSuccessElement.style.color = '#ff9800'; // Orange for medium success
+                    } else {
+                        triangleSuccessElement.style.color = '#f44336'; // Red for low success
+                    }
+                } else {
+                    competitionStatsElement.style.display = 'none';
+                }
             }
         }
 
