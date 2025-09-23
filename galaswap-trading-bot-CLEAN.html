@@ -1273,6 +1273,18 @@
                 <div class="value" id="priceFreshness" style="color: #f44336;">Never</div>
                 <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Data age</div>
             </div>
+            
+            <div class="status-card">
+                <h3>🛡️ Safety Reserve</h3>
+                <div class="value" id="safetyReserve" style="color: #4caf50;">500 GALA</div>
+                <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Fee reserve</div>
+            </div>
+            
+            <div class="status-card">
+                <h3>📊 Max Usage</h3>
+                <div class="value" id="maxUsage" style="color: #ff9800;">90%</div>
+                <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Per token</div>
+            </div>
             <div class="status-card">
                 <h3>🔒 Security</h3>
                 <div class="value" id="securityStatus">🛡️</div>
@@ -3134,6 +3146,11 @@
         let successfulSwaps = 0;
         let failedSwaps = 0;
         let swapHistory = [];
+        
+        // SAFETY PARAMETERS - CRITICAL FOR PROTECTION
+        const RESERVE_GALA_FOR_FEES = 500; // Reserve 500 GALA for transaction fees
+        const MAX_TOKEN_USAGE_PERCENT = 90; // Never spend more than 90% of any token
+        const MIN_GALA_FOR_TRADE = 10; // Minimum GALA required for any trade (including fees)
         
         // Trading Mode Configuration - v9.1.9 BUTTON FIX WORKING CACHE REFRESH
         let tradingMode = 'conservative'; // 'conservative', 'competition', 'tradecap'
@@ -5080,6 +5097,64 @@
             }
         }
 
+        // Calculate safe position size with safety parameters
+        function calculateSafePositionSize(token, action, basePositionSize) {
+            const tokenBalance = tokenBalances[token] || 0;
+            const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
+            
+            // Safety check: Ensure we have minimum GALA for fees
+            if (galaBalance < MIN_GALA_FOR_TRADE) {
+                logMessage(`⚠️ Insufficient GALA for trading: ${galaBalance.toFixed(2)} GALA (minimum: ${MIN_GALA_FOR_TRADE} GALA)`, 'warning');
+                return 0;
+            }
+            
+            // Calculate available GALA after reserving for fees
+            const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+            
+            if (availableGala < MIN_GALA_FOR_TRADE) {
+                logMessage(`⚠️ Insufficient GALA after fee reserve: ${availableGala.toFixed(2)} GALA (reserved: ${RESERVE_GALA_FOR_FEES} GALA)`, 'warning');
+                return 0;
+            }
+            
+            let safePositionSize = basePositionSize;
+            
+            if (action === 'buy') {
+                // For buy orders, limit based on available GALA
+                safePositionSize = Math.min(safePositionSize, availableGala);
+                
+                // Additional safety: never spend more than 90% of available GALA
+                const maxGalaUsage = availableGala * (MAX_TOKEN_USAGE_PERCENT / 100);
+                safePositionSize = Math.min(safePositionSize, maxGalaUsage);
+                
+                logMessage(`🛡️ SAFETY: Buy position limited to ${safePositionSize.toFixed(2)} GALA (available: ${availableGala.toFixed(2)}, max usage: ${maxGalaUsage.toFixed(2)})`, 'info');
+                
+            } else if (action === 'sell') {
+                // For sell orders, limit based on token balance
+                const tokenPrice = tokenPrices[token] || 0;
+                if (tokenPrice === 0) {
+                    logMessage(`⚠️ No price data for ${getTokenSymbol(token)}, cannot calculate safe sell amount`, 'warning');
+                    return 0;
+                }
+                
+                // Calculate how much token we can sell (90% of balance)
+                const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
+                const maxGalaValue = maxTokenUsage * tokenPrice;
+                
+                // Limit position size to the smaller of: calculated size or max token usage
+                safePositionSize = Math.min(safePositionSize, maxGalaValue);
+                
+                logMessage(`🛡️ SAFETY: Sell position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+            }
+            
+            // Final safety check: ensure position size is reasonable
+            if (safePositionSize < 1) {
+                logMessage(`⚠️ Position size too small: ${safePositionSize.toFixed(4)} GALA`, 'warning');
+                return 0;
+            }
+            
+            return safePositionSize;
+        }
+        
         // Add profit/loss tracking
         function calculatePortfolioValue() {
             let totalValue = 0;
@@ -6798,19 +6873,29 @@
             if (tradeAmount < 1) {
                 logMessage(`⚠️ Insufficient balance for triangle arbitrage: ${triangle.symbolA}`, 'warning');
                 
-                // Check if we can acquire the token through GALA swap
+                // Check if we can acquire the token through GALA swap with safety parameters
                 const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
-                if (galaBalance > 10) { // Need at least 10 GALA to make it worthwhile
-                    const acquisitionResult = await acquireTokenForArbitrage(triangle.tokenA, triangle);
-                    if (acquisitionResult.success) {
-                        tradeAmount = acquisitionResult.amount;
-                        logMessage(`✅ Acquired ${tradeAmount.toFixed(4)} ${triangle.symbolA} for arbitrage`, 'success');
+                const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+                
+                if (availableGala > MIN_GALA_FOR_TRADE) {
+                    // Use safe position sizing for acquisition
+                    const acquisitionAmount = calculateSafePositionSize(triangle.tokenA, 'buy', 10); // Base 10 GALA for acquisition
+                    
+                    if (acquisitionAmount > 0) {
+                        const acquisitionResult = await acquireTokenForArbitrage(triangle.tokenA, triangle, acquisitionAmount);
+                        if (acquisitionResult.success) {
+                            tradeAmount = acquisitionResult.amount;
+                            logMessage(`✅ Acquired ${tradeAmount.toFixed(4)} ${triangle.symbolA} for arbitrage (safe amount: ${acquisitionAmount.toFixed(2)} GALA)`, 'success');
+                        } else {
+                            logMessage(`❌ Failed to acquire ${triangle.symbolA} for arbitrage`, 'error');
+                            return;
+                        }
                     } else {
-                        logMessage(`❌ Failed to acquire ${triangle.symbolA} for arbitrage`, 'error');
+                        logMessage(`❌ Safe acquisition amount calculated as 0 for ${triangle.symbolA}`, 'error');
                         return;
                     }
                 } else {
-                    logMessage(`❌ Insufficient GALA balance to acquire ${triangle.symbolA}`, 'error');
+                    logMessage(`❌ Insufficient GALA balance for safe acquisition: ${availableGala.toFixed(2)} GALA (reserved: ${RESERVE_GALA_FOR_FEES} GALA)`, 'error');
                     return;
                 }
             }
@@ -7048,29 +7133,36 @@
             let positionSize, adjustedAmount;
             
             if (tradeCapMode) {
-                // Trade cap mode: Use small fixed amounts for better test results
-                // Account for 1 GALA transaction fee, so use 5-25 GALA range
-                const maxAvailable = Math.min(galaBalance - 1, 25); // Leave 1 GALA for fees, max 25 GALA
-                const testAmount = Math.min(Math.random() * 20 + 5, maxAvailable); // Random between 5-25 GALA, but not more than available
+                // Trade cap mode: Use small fixed amounts with safety parameters
+                const baseAmount = Math.random() * 20 + 5; // Random between 5-25 GALA
+                positionSize = calculateSafePositionSize(token, action, baseAmount);
                 
-                if (testAmount < 5) {
-                    logMessage(`⚠️ Insufficient GALA balance for trade: ${galaBalance.toFixed(4)} GALA (need at least 6 GALA for 5 GALA trade + 1 GALA fee)`, 'warning');
+                if (positionSize === 0) {
+                    logMessage(`⚠️ Trade cap mode: Position size calculated as 0, skipping trade`, 'warning');
                     return;
                 }
                 
-                positionSize = testAmount; // This is the GALA amount we want to spend
-                adjustedAmount = testAmount; // This should be the GALA amount, not token amount
-                logMessage(`🔒 TRADE CAP: Using position size of ${testAmount.toFixed(4)} GALA (includes 1 GALA fee)`, 'info');
-                logMessage(`🔍 Position calculated: ${(testAmount / price).toFixed(4)} ${symbol} for ${testAmount.toFixed(4)} GALA`, 'info');
+                adjustedAmount = positionSize;
+                logMessage(`🔒 TRADE CAP: Using safe position size of ${positionSize.toFixed(4)} GALA`, 'info');
+                logMessage(`🔍 Position calculated: ${(positionSize / price).toFixed(4)} ${symbol} for ${positionSize.toFixed(4)} GALA`, 'info');
             } else {
-                // Live mode: Use full position sizing
+                // Live mode: Use full position sizing with safety parameters
                 const activeConfig = getActiveConfig();
-                positionSize = (portfolioValue * activeConfig.maxPositionSize / 100);
-            const amount = positionSize / price;
-            
-            // Calculate confidence-based position sizing
-            const adjustedPositionSize = positionSize * confidenceMultiplier;
-                adjustedAmount = adjustedPositionSize; // This should be the GALA amount, not token amount
+                const basePositionSize = (portfolioValue * activeConfig.maxPositionSize / 100);
+                
+                // Apply safety parameters
+                positionSize = calculateSafePositionSize(token, action, basePositionSize);
+                
+                if (positionSize === 0) {
+                    logMessage(`⚠️ Live mode: Position size calculated as 0, skipping trade`, 'warning');
+                    return;
+                }
+                
+                // Calculate confidence-based position sizing
+                const adjustedPositionSize = positionSize * confidenceMultiplier;
+                adjustedAmount = adjustedPositionSize;
+                
+                logMessage(`💰 LIVE MODE: Using safe position size of ${adjustedAmount.toFixed(4)} GALA (base: ${positionSize.toFixed(4)}, confidence: ${(confidenceMultiplier * 100).toFixed(1)}%)`, 'info');
             }
             
             // Dynamic liquidity handling based on competition mode
@@ -7897,6 +7989,28 @@
                 } else {
                     priceFreshnessElement.style.color = '#f44336'; // Red for stale
                 }
+            }
+            
+            // Update safety reserve status
+            const safetyReserveElement = document.getElementById('safetyReserve');
+            if (safetyReserveElement) {
+                const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
+                const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+                
+                if (galaBalance >= RESERVE_GALA_FOR_FEES) {
+                    safetyReserveElement.textContent = `${RESERVE_GALA_FOR_FEES} GALA`;
+                    safetyReserveElement.style.color = '#4caf50'; // Green for sufficient reserve
+                } else {
+                    safetyReserveElement.textContent = `${galaBalance.toFixed(0)}/${RESERVE_GALA_FOR_FEES}`;
+                    safetyReserveElement.style.color = '#f44336'; // Red for insufficient reserve
+                }
+            }
+            
+            // Update max usage status
+            const maxUsageElement = document.getElementById('maxUsage');
+            if (maxUsageElement) {
+                maxUsageElement.textContent = `${MAX_TOKEN_USAGE_PERCENT}%`;
+                maxUsageElement.style.color = '#ff9800'; // Orange for usage limit
             }
         }
 
