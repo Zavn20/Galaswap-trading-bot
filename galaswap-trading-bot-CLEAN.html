@@ -7,9 +7,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 23 Dec 2024 08:00:00 GMT">
-    <title>GalaSwap Trading Bot v9.1.10 - Price Freshness Debug</title>
-    <!-- Version: 9.1.10 - Price Freshness Debug Added -->
-    <meta name="version" content="9.1.10-price-freshness-debug-2024">
+    <title>GalaSwap Trading Bot v9.1.11 - Price Freshness Debug Enhanced</title>
+    <!-- Version: 9.1.11 - Price Freshness Debug Enhanced -->
+    <meta name="version" content="9.1.11-price-freshness-debug-enhanced-2024">
     <meta name="build" content="20241221-002-price-freshness-fixed">
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -8040,6 +8040,8 @@
 
         // Update status display
         function updateStatus() {
+            console.log(`🔍 updateStatus() called - starting status update`);
+            
             // Recalculate portfolio value before displaying
             portfolioValue = calculatePortfolioValue();
             
@@ -8257,8 +8259,11 @@
             }
             
             // Update price freshness status - CRITICAL FOR SAFETY
+            console.log(`🔍 About to update price freshness status`);
             const priceFreshnessElement = document.getElementById('priceFreshness');
+            console.log(`🔍 priceFreshnessElement found:`, !!priceFreshnessElement);
             if (priceFreshnessElement) {
+                console.log(`🔍 Calling getPriceFreshnessStatus()`);
                 const freshnessStatus = getPriceFreshnessStatus();
                 console.log(`🔍 Price freshness debug: lastPriceUpdateTime=${lastPriceUpdateTime}, freshnessStatus=`, freshnessStatus);
                 priceFreshnessElement.textContent = freshnessStatus.age;
