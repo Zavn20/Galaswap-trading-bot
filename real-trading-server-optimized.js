@@ -111,6 +111,7 @@ async function getOptimizedPrices() {
     const tokens = [
         'GALA|Unit|none|none',
         'GUSDC|Unit|none|none', 
+        'GUSDT|Unit|none|none',
         'ETIME|Unit|none|none',
         'GTON|Unit|none|none',
         'GOSMI|Unit|none|none',
@@ -121,7 +122,7 @@ async function getOptimizedPrices() {
     // Parallel price fetching instead of sequential
     const pricePromises = tokens.map(async (token, index) => {
         try {
-            if (token === 'GUSDC|Unit|none|none') {
+            if (token === 'GUSDC|Unit|none|none' || token === 'GUSDT|Unit|none|none') {
                 return 1.00; // Stablecoin
             } else if (token === 'GALA|Unit|none|none') {
                 const quote = await gswap.quoting.quoteExactInput(

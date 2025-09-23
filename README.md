@@ -10,7 +10,7 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 
 ### ⚡ **Real Trading**
 - **On-Chain Swaps**: Execute real transactions using GalaChain SDK
-- **Multi-Token Support**: Trade GALA, GUSDC, FILM, GOSMI, ETIME, GTON, GMUSIC
+- **Multi-Token Support**: Trade GALA, GUSDC, GUSDT, FILM, GOSMI, ETIME, GTON, GMUSIC
 - **Slippage Protection**: Configurable slippage tolerance
 - **Transaction Monitoring**: Real-time status tracking
 
@@ -33,7 +33,7 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 
 ### 💰 **Smart Pricing**
 - **USD Conversion**: All prices displayed in USD
-- **Stablecoin Support**: GUSDC pegged to $1.00 USD
+- **Stablecoin Support**: GUSDC and GUSDT pegged to $1.00 USD
 - **Dynamic Pricing**: Real-time GALA/USD conversion
 - **30-Second Freshness**: Price data must be less than 30 seconds old for trading
 - **No Fallback Pricing**: Maximum safety - no trades with stale or estimated prices
