@@ -35,10 +35,18 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **USD Conversion**: All prices displayed in USD
 - **Stablecoin Support**: GUSDC and GUSDT pegged to $1.00 USD
 - **Dynamic Pricing**: Real-time GALA/USD conversion
+- **10-Second Cache**: Ultra-fresh pricing with 20-second buffer for 30-second requirement
 - **30-Second Freshness**: Price data must be less than 30 seconds old for trading
 - **No Fallback Pricing**: Maximum safety - no trades with stale or estimated prices
 
-## 🆕 Latest Updates (v9.2.0)
+## 🆕 Latest Updates (v9.2.1)
+
+### ⚡ **API Performance Optimizations**
+- **10-Second Price Cache**: Ultra-fresh pricing with 20-second buffer for 30-second requirement
+- **Enhanced Rate Limiting**: Increased to 200 requests/minute for frequent updates
+- **Smart Caching Strategy**: 10s price, 15s balance, 10s quote cache TTLs
+- **SDK Monitoring**: Real-time tracking of SDK errors and rate limit hits
+- **Performance Metrics**: Comprehensive health endpoint with cache statistics
 
 ### 🔒 **Critical Safety Enhancements**
 - **30-Second Price Freshness**: All trades require price data less than 30 seconds old
