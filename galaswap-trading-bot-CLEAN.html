@@ -7,9 +7,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 23 Dec 2024 08:00:00 GMT">
-    <title>GalaSwap Trading Bot v9.1.13 - Price Freshness FINALLY FIXED</title>
-    <!-- Version: 9.1.13 - Price Freshness FINALLY FIXED -->
-    <meta name="version" content="9.1.13-price-freshness-finally-fixed-2024">
+    <title>GalaSwap Trading Bot v9.2.0 - EXECUTION ENGINE ACTIVATED</title>
+    <!-- Version: 9.2.0 - EXECUTION ENGINE ACTIVATED -->
+    <meta name="version" content="9.2.0-execution-engine-activated-2024">
     <meta name="build" content="20241221-002-price-freshness-fixed">
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -7101,15 +7101,12 @@
                 return;
             }
             
-            // Calculate batch size (2-5% of available GALA for competition strategy)
-            const batchSizePercent = Math.random() * (config.maxBatchSize - config.minBatchSize) + config.minBatchSize;
-            const batchSizeGala = availableGala * batchSizePercent;
-            
-            // In competition mode, we can use more aggressive sizing since we're collecting GALA
-            // But still keep it reasonable to avoid large losses
+            // Competition mode: Use full available GALA for maximum profit
+            const batchSizeGala = availableGala; // Use full available GALA in competition mode
             
             logMessage(`🏆 COMPETITION TRIANGLE: ${triangle.path} (${triangle.profitPercent.toFixed(2)}% profit)`, 'success');
-            logMessage(`💰 Batch size: ${batchSizeGala.toFixed(2)} GALA (${(batchSizePercent * 100).toFixed(1)}% of available)`, 'info');
+            logMessage(`💰 Batch size: ${batchSizeGala.toFixed(2)} GALA (using full available GALA)`, 'info');
+            logMessage(`🚀 EXECUTING REAL SWAPS via GalaSwap SDK`, 'info');
             
             // Mark as executing
             competitionTriangleStats.isCurrentlyExecuting = true;
@@ -7126,10 +7123,15 @@
                 const tokenAAmount = batchSizeGala / tokenAPrice;
                 logMessage(`Step 1: Buy ${tokenAAmount.toFixed(4)} ${triangle.symbolA} with ${batchSizeGala.toFixed(2)} GALA`, 'info');
                 
-                // Simulate the swap (in real implementation, this would be actual swaps)
-                const step1Success = await simulateSwap('GALA|Unit|none|none', triangle.tokenA, batchSizeGala);
-                if (!step1Success) {
-                    throw new Error(`Failed to buy ${triangle.symbolA}`);
+                // Execute real swap using GalaSwap SDK
+                const step1Quote = await getSwapQuote('GALA|Unit|none|none', triangle.tokenA, batchSizeGala);
+                if (!step1Quote) {
+                    throw new Error(`No liquidity for GALA → ${triangle.symbolA}`);
+                }
+                
+                const step1Result = await executeSwap('GALA|Unit|none|none', triangle.tokenA, batchSizeGala, step1Quote);
+                if (!step1Result.success) {
+                    throw new Error(`Failed to buy ${triangle.symbolA}: ${step1Result.error}`);
                 }
                 
                 // Step 2: Swap TokenA -> TokenB
@@ -7137,9 +7139,14 @@
                 const tokenBPrice = tokenPrices[triangle.tokenB] || 0;
                 const tokenBAmount = (tokenAAmount * tokenAPrice) / tokenBPrice * 0.997; // 0.3% slippage
                 
-                const step2Success = await simulateSwap(triangle.tokenA, triangle.tokenB, tokenAAmount);
-                if (!step2Success) {
-                    throw new Error(`Failed to swap ${triangle.symbolA} → ${triangle.symbolB}`);
+                const step2Quote = await getSwapQuote(triangle.tokenA, triangle.tokenB, tokenAAmount);
+                if (!step2Quote) {
+                    throw new Error(`No liquidity for ${triangle.symbolA} → ${triangle.symbolB}`);
+                }
+                
+                const step2Result = await executeSwap(triangle.tokenA, triangle.tokenB, tokenAAmount, step2Quote);
+                if (!step2Result.success) {
+                    throw new Error(`Failed to swap ${triangle.symbolA} → ${triangle.symbolB}: ${step2Result.error}`);
                 }
                 
                 // Step 3: Swap TokenB -> TokenC
@@ -7147,22 +7154,34 @@
                 const tokenCPrice = tokenPrices[triangle.tokenC] || 0;
                 const tokenCAmount = (tokenBAmount * tokenBPrice) / tokenCPrice * 0.997; // 0.3% slippage
                 
-                const step3Success = await simulateSwap(triangle.tokenB, triangle.tokenC, tokenBAmount);
-                if (!step3Success) {
-                    throw new Error(`Failed to swap ${triangle.symbolB} → ${triangle.symbolC}`);
+                const step3Quote = await getSwapQuote(triangle.tokenB, triangle.tokenC, tokenBAmount);
+                if (!step3Quote) {
+                    throw new Error(`No liquidity for ${triangle.symbolB} → ${triangle.symbolC}`);
+                }
+                
+                const step3Result = await executeSwap(triangle.tokenB, triangle.tokenC, tokenBAmount, step3Quote);
+                if (!step3Result.success) {
+                    throw new Error(`Failed to swap ${triangle.symbolB} → ${triangle.symbolC}: ${step3Result.error}`);
                 }
                 
                 // Step 4: Swap TokenC -> GALA (back to GALA)
                 logMessage(`Step 4: Swap ${tokenCAmount.toFixed(4)} ${triangle.symbolC} → GALA`, 'info');
                 const finalGalaAmount = (tokenCAmount * tokenCPrice) * 0.997; // 0.3% slippage
                 
-                const step4Success = await simulateSwap(triangle.tokenC, 'GALA|Unit|none|none', tokenCAmount);
-                if (!step4Success) {
-                    throw new Error(`Failed to swap ${triangle.symbolC} → GALA`);
+                const step4Quote = await getSwapQuote(triangle.tokenC, 'GALA|Unit|none|none', tokenCAmount);
+                if (!step4Quote) {
+                    throw new Error(`No liquidity for ${triangle.symbolC} → GALA`);
                 }
                 
-                // Calculate actual profit
-                const actualProfit = finalGalaAmount - batchSizeGala;
+                const step4Result = await executeSwap(triangle.tokenC, 'GALA|Unit|none|none', tokenCAmount, step4Quote);
+                if (!step4Result.success) {
+                    throw new Error(`Failed to swap ${triangle.symbolC} → GALA: ${step4Result.error}`);
+                }
+                
+                // Calculate actual profit from real swap results
+                const actualTokenCAmount = Number(step3Result.data?.amountOut || tokenCAmount);
+                const actualFinalGalaAmount = Number(step4Result.data?.amountOut || finalGalaAmount);
+                const actualProfit = actualFinalGalaAmount - batchSizeGala;
                 const actualProfitPercent = (actualProfit / batchSizeGala) * 100;
                 
                 // Validate success if enabled
@@ -7180,10 +7199,15 @@
                 logMessage(`📊 Competition Stats: ${competitionTriangleStats.successfulTriangles}/${competitionTriangleStats.totalTriangles} successful`, 'info');
                 logMessage(`💰 Total GALA Gained: ${competitionTriangleStats.totalGalaGained.toFixed(4)} GALA`, 'success');
                 
-                // Update balances (simulated)
-                if (tokenBalances['GALA|Unit|none|none']) {
-                    tokenBalances['GALA|Unit|none|none'] += actualProfit;
-                }
+                // Update balances with real swap results
+                const actualTokenAAmount = Number(step1Result.data?.amountOut || tokenAAmount);
+                const actualTokenBAmount = Number(step2Result.data?.amountOut || tokenBAmount);
+                
+                // Update token balances based on actual swap results
+                tokenBalances['GALA|Unit|none|none'] = (tokenBalances['GALA|Unit|none|none'] || 0) - batchSizeGala + actualFinalGalaAmount;
+                tokenBalances[triangle.tokenA] = (tokenBalances[triangle.tokenA] || 0) + actualTokenAAmount;
+                tokenBalances[triangle.tokenB] = (tokenBalances[triangle.tokenB] || 0) + actualTokenBAmount;
+                tokenBalances[triangle.tokenC] = (tokenBalances[triangle.tokenC] || 0) + actualTokenCAmount;
                 
                 // Update portfolio value
                 portfolioValue = calculatePortfolioValue();
