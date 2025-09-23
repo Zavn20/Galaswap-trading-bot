@@ -149,10 +149,16 @@ async function getOptimizedPrices() {
 
     const prices = await Promise.all(pricePromises);
     
-    // Cache the results
-    priceCache.set('token_prices', prices);
+    // Convert array to object with token keys
+    const priceObject = {};
+    tokens.forEach((token, index) => {
+        priceObject[token] = prices[index];
+    });
     
-    return prices;
+    // Cache the results
+    priceCache.set('token_prices', priceObject);
+    
+    return priceObject;
 }
 
 // Helper function to get GALA USD price
@@ -216,6 +222,51 @@ app.get('/api/prices', async (req, res) => {
     } catch (error) {
         healthMetrics.errors++;
         console.error('❌ Prices endpoint error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// POST endpoint for prices (used by the bot)
+app.post('/api/prices', async (req, res) => {
+    try {
+        healthMetrics.requests++;
+        
+        if (!gswap) {
+            await initializeSDK();
+        }
+
+        const { tokens } = req.body;
+        
+        if (!tokens || !Array.isArray(tokens)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid request: tokens array is required'
+            });
+        }
+
+        const prices = await getOptimizedPrices();
+        
+        // Filter prices for requested tokens
+        const requestedPrices = tokens.map(token => {
+            const price = prices[token] || null;
+            return price;
+        });
+
+        res.json({
+            success: true,
+            status: 200,
+            data: requestedPrices,
+            timestamp: new Date().toISOString(),
+            source: 'real-sdk-optimized',
+            cached: priceCache.get('token_prices') ? true : false
+        });
+
+    } catch (error) {
+        healthMetrics.errors++;
+        console.error('❌ Prices POST endpoint error:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 
@@ -444,6 +495,108 @@ app.get('/api/balance', async (req, res) => {
     } catch (error) {
         healthMetrics.errors++;
         console.error('❌ Balance endpoint error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// POST endpoint for balance (used by the bot)
+app.post('/api/balance', async (req, res) => {
+    try {
+        healthMetrics.requests++;
+        const { walletAddress } = req.body;
+        const clientId = req.ip;
+        
+        // Rate limiting
+        if (!checkRateLimit(clientId)) {
+            return res.status(429).json({ 
+                success: false, 
+                error: 'Rate limit exceeded' 
+            });
+        }
+        
+        if (!walletAddress) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'walletAddress parameter required' 
+            });
+        }
+
+        // Check cache first
+        const cacheKey = `balance_${walletAddress}`;
+        const cachedBalance = balanceCache.get(cacheKey);
+        if (cachedBalance) {
+            healthMetrics.cacheHits++;
+            return res.json(cachedBalance);
+        }
+        
+        healthMetrics.cacheMisses++;
+
+        if (!gswap) {
+            await initializeSDK();
+        }
+
+        console.log(`💳 Balance request for: ${walletAddress}`);
+        console.log(`🔍 Fetching balances using SDK getUserAssets with address: ${walletAddress}`);
+
+        const assets = await gswap.assets.getUserAssets(walletAddress);
+        console.log(`🔍 SDK returned: ${typeof assets} ${assets ? 'true' : 'false'}`);
+
+        if (assets && assets.tokens && Array.isArray(assets.tokens)) {
+            console.log(`✅ Using assets.tokens array with ${assets.tokens.length} tokens`);
+            
+            const balances = assets.tokens
+                .filter(asset => {
+                    // Filter out test tokens
+                    const isTestToken = asset.symbol.includes('TEST') || 
+                                      asset.symbol.includes('DEXT') || 
+                                      asset.name.includes('Test') ||
+                                      !asset.verify;
+                    return !isTestToken;
+                })
+                .map(asset => ({
+                    symbol: asset.symbol,
+                    balance: asset.quantity || asset.balance,
+                    contractAddress: asset.contractAddress,
+                    decimals: asset.decimals,
+                    verified: asset.verify || asset.verified,
+                    image: asset.image
+                }));
+
+            console.log(`✅ PROD1 balances retrieved: ${balances.length} tokens`);
+            console.log(`📤 Sending ${balances.length} balances to client: ${balances.map(b => `${b.symbol}:${b.balance}`).join(', ')}`);
+
+            const response = {
+                success: true,
+                balances: balances,
+                count: balances.length,
+                source: 'prod1-optimized',
+                cached: false
+            };
+
+            // Cache the response
+            balanceCache.set(cacheKey, response);
+            
+            res.json(response);
+
+        } else {
+            console.error('❌ PROD1 getUserAssets failed:', 'Invalid response format');
+            console.log(`📊 PROD1 is currently down (403 Forbidden). Waiting for PROD1 to come back online.`);
+            console.log(`🚫 No DEV1 fallback - user requested PROD1 only.`);
+            res.json({
+                success: true,
+                balances: [],
+                count: 0,
+                source: 'prod1-optimized',
+                error: 'PROD1 endpoints are currently down (403 Forbidden). Waiting for PROD1 to come back online.'
+            });
+        }
+
+    } catch (error) {
+        healthMetrics.errors++;
+        console.error('❌ Balance POST endpoint error:', error);
         res.status(500).json({ 
             success: false, 
             error: error.message 

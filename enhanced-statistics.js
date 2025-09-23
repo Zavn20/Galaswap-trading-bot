@@ -76,6 +76,63 @@ class MarketDataCollector {
 
         return { change, changePercent };
     }
+
+    // Update market data with new prices (compatible with bot's expectations)
+    updateMarketData(newPrices) {
+        const now = Date.now();
+        const changes = {};
+        
+        // Calculate changes for each token
+        Object.entries(newPrices).forEach(([token, price]) => {
+            if (price === null || price === undefined) return;
+            
+            const symbol = token.split('|')[0]; // Extract symbol from token format
+            const previousPrice = this.priceHistory[token] ? 
+                (this.priceHistory[token].length > 0 ? this.priceHistory[token][this.priceHistory[token].length - 1].price : null) : null;
+            
+            // Store current price as history
+            this.updatePriceHistory(token, price, new Date().toISOString());
+            
+            // Calculate change
+            changes[symbol] = {
+                price: price,
+                change: this.calculatePriceChange(price, previousPrice),
+                symbol: symbol,
+                token: token
+            };
+        });
+        
+        this.lastUpdate = now;
+        return changes;
+    }
+
+    // Calculate price change percentage (helper method)
+    calculatePriceChange(currentPrice, previousPrice) {
+        if (!previousPrice || previousPrice === 0) return 0;
+        return ((currentPrice - previousPrice) / previousPrice) * 100;
+    }
+
+    // Get market data for display (compatible with bot's expectations)
+    getMarketData() {
+        const marketData = [];
+        
+        // Convert price history to display format
+        Object.entries(this.priceHistory).forEach(([token, history]) => {
+            if (history && history.length > 0) {
+                const latestPrice = history[history.length - 1].price;
+                const priceChange = this.getPriceChange(token, 5);
+                
+                marketData.push({
+                    symbol: token.split('|')[0], // Extract symbol from token format
+                    token: token,
+                    price: latestPrice,
+                    change: priceChange.changePercent
+                });
+            }
+        });
+        
+        return marketData;
+    }
 }
 
 // 📊 Market Analysis Engine
