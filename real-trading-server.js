@@ -1,30 +1,24 @@
 const http = require('http');
-const url = require('url');
 const { GSwap, PrivateKeySigner, FEE_TIER } = require('@gala-chain/gswap-sdk');
 
 const PORT = 3000;
 
-// Initialize GSwap SDK
+// Global SDK instances
 let gswap = null;
 let gswapWithSigner = null;
 
-// Initialize SDK instances
+// Initialize read-only SDK
 function initializeSDK() {
     try {
-        // Read-only instance for quotes and data
         gswap = new GSwap({
-            gatewayBaseUrl: 'https://gateway-mainnet.galachain.com',
-            dexContractBasePath: '/api/asset/dexv3-contract',
-            tokenContractBasePath: '/api/asset/token-contract',
-            bundlerBaseUrl: 'https://bundle-backend-prod1.defi.gala.com',
-            bundlingAPIBasePath: '/bundle',
-            dexBackendBaseUrl: 'https://dex-backend-prod1.defi.gala.com',
-            transactionWaitTimeoutMs: 300000, // 5 minutes
+            network: 'mainnet',
+            bundlerUrl: 'https://bundle-backend-prod1.defi.gala.com'
         });
-        
         console.log('✅ GSwap SDK initialized successfully');
+        return true;
     } catch (error) {
-        console.error('❌ Failed to initialize GSwap SDK:', error.message);
+        console.error('❌ Failed to initialize SDK:', error.message);
+        return false;
     }
 }
 
@@ -34,87 +28,63 @@ function initializeSDKWithSigner(privateKey, walletAddress) {
         gswapWithSigner = new GSwap({
             signer: new PrivateKeySigner(privateKey),
             walletAddress: walletAddress,
-            gatewayBaseUrl: 'https://gateway-mainnet.galachain.com',
-            dexContractBasePath: '/api/asset/dexv3-contract',
-            tokenContractBasePath: '/api/asset/token-contract',
-            bundlerBaseUrl: 'https://bundle-backend-prod1.defi.gala.com',
-            bundlingAPIBasePath: '/bundle',
-            dexBackendBaseUrl: 'https://dex-backend-prod1.defi.gala.com',
-            transactionWaitTimeoutMs: 300000,
+            network: 'mainnet',
+            bundlerUrl: 'https://bundle-backend-prod1.defi.gala.com'
         });
-        
         console.log('✅ GSwap SDK with signer initialized successfully');
         return true;
     } catch (error) {
-        console.error('❌ Failed to initialize GSwap SDK with signer:', error.message);
+        console.error('❌ Failed to initialize SDK with signer:', error.message);
         return false;
     }
 }
 
-// Connect to event socket for real-time transaction monitoring
+// Connect to event socket for real-time monitoring
 async function connectEventSocket() {
     try {
-        // Check if already connected
-        if (GSwap.events.eventSocketConnected()) {
-            console.log('✅ Event socket already connected');
-            return true;
+        if (!GSwap.events.eventSocketConnected()) {
+            await GSwap.events.connectEventSocket();
+            console.log('✅ Event socket connected for real-time monitoring');
         }
-        
-        const eventEmitter = await GSwap.events.connectEventSocket();
-        console.log('✅ Event socket connected for real-time monitoring');
-        console.log('Connected:', GSwap.events.eventSocketConnected());
-        
-        // Add error handling for the event emitter
-        eventEmitter.on('error', (error) => {
-            console.error('❌ Event socket error:', error.message);
-        });
-        
-        eventEmitter.on('disconnect', () => {
-            console.log('⚠️ Event socket disconnected');
-        });
-        
-        return true;
     } catch (error) {
         console.error('❌ Failed to connect event socket:', error.message);
-        console.log('🔄 Will retry connection on next transaction');
-        return false;
     }
 }
 
-// HTTP server
-const server = http.createServer((req, res) => {
+// Create HTTP server
+const server = http.createServer(async (req, res) => {
+    const { method, url } = req;
+    const urlObj = new URL(url, `http://localhost:${PORT}`);
+    const path = urlObj.pathname;
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') {
+
+    if (method === 'OPTIONS') {
         res.writeHead(200);
         res.end();
         return;
     }
 
-    const parsedUrl = url.parse(req.url, true);
-    const path = parsedUrl.pathname;
-    const method = req.method;
-
-    console.log(`${method} ${path}`);
-
     // Health check endpoint
     if (path === '/api/health' && method === 'GET') {
+        const isSDKReady = gswap !== null;
+        const isSocketConnected = GSwap.events.eventSocketConnected();
+        
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
+            success: true,
             status: 'healthy',
-            message: 'GalaSwap Trading Bot Server with REAL SDK is running',
-            timestamp: new Date().toISOString(),
-            version: '2.0.0',
-            sdkInitialized: !!gswap,
-            eventSocketConnected: GSwap.events.eventSocketConnected()
+            sdk_initialized: isSDKReady,
+            socket_connected: isSocketConnected,
+            timestamp: new Date().toISOString()
         }));
         return;
     }
 
-    // Prices endpoint - using real SDK
+    // Prices endpoint - using real SDK only
     if (path === '/api/prices' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -185,26 +155,8 @@ const server = http.createServer((req, res) => {
                         console.log(`📊 ${token}: ${priceInGala} GALA = $${priceInUsd.toFixed(6)} USD`);
                         
                     } catch (error) {
-                        console.log(`⚠️ Could not get price for ${token}: ${error.message}`);
-                        
-                        // Use fallback prices based on token symbol (in USD)
-                        const tokenSymbol = token.split('|')[0];
-                        let fallbackPrice = 0.01;
-                        
-                        if (tokenSymbol === 'GUSDC') {
-                            fallbackPrice = 1.0; // $1 USD for stablecoin
-                            console.log(`📊 ${token}: $1.00 USD (stablecoin fallback)`);
-                        } else if (tokenSymbol === 'FILM') fallbackPrice = 0.0095; // ~$0.0095 USD
-                        else if (tokenSymbol === 'GOSMI') fallbackPrice = 0.0089; // ~$0.0089 USD
-                        else if (tokenSymbol === 'ETIME') fallbackPrice = 0.0052; // ~$0.0052 USD
-                        else if (tokenSymbol === 'GTON') fallbackPrice = 0.0175; // ~$0.0175 USD
-                        else if (tokenSymbol === 'GMUSIC') fallbackPrice = 1.0; // Assume $1 USD
-                        else {
-                            fallbackPrice = 0.01; // Default $0.01 USD
-                            console.log(`📊 ${token}: $${fallbackPrice} USD (fallback)`);
-                        }
-                        
-                        prices.push(fallbackPrice);
+                        console.log(`❌ Could not get price for ${token}: ${error.message}`);
+                        throw new Error(`Failed to get real price for ${token}: ${error.message}`);
                     }
                 }
 
@@ -230,7 +182,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Quote endpoint - using real SDK
+    // Quote endpoint - using real SDK only
     if (path === '/api/quote' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -248,55 +200,26 @@ const server = http.createServer((req, res) => {
                     throw new Error('SDK not initialized');
                 }
 
-                // Get real quote from SDK with error handling
-                let quote;
-                try {
-                    quote = await gswap.quoting.quoteExactInput(
-                        tokenIn,
-                        tokenOut,
-                        amountIn.toString()
-                    );
-                } catch (quoteError) {
-                    console.log(`⚠️ SDK quote failed for ${tokenIn} → ${tokenOut}: ${quoteError.message}`);
-                    
-                    // Fallback to simulated quote for unsupported pairs
-                    const tokenInSymbol = tokenIn.split('|')[0];
-                    const tokenOutSymbol = tokenOut.split('|')[0];
-                    
-                    let price = 1;
-                    if (tokenInSymbol === 'GALA' && tokenOutSymbol === 'GUSDC') price = 58.0;
-                    else if (tokenInSymbol === 'GUSDC' && tokenOutSymbol === 'GALA') price = 1/58.0;
-                    else if (tokenInSymbol === 'GALA' && tokenOutSymbol === 'FILM') price = 0.53;
-                    else if (tokenInSymbol === 'FILM' && tokenOutSymbol === 'GALA') price = 1/0.53;
-                    else if (tokenInSymbol === 'GALA' && tokenOutSymbol === 'GOSMI') price = 0.51;
-                    else if (tokenInSymbol === 'GOSMI' && tokenOutSymbol === 'GALA') price = 1/0.51;
-                    else if (tokenInSymbol === 'GALA' && tokenOutSymbol === 'ETIME') price = 0.29;
-                    else if (tokenInSymbol === 'ETIME' && tokenOutSymbol === 'GALA') price = 1/0.29;
-                    
-                    const amountOut = (parseFloat(amountIn) * price * (1 - parseFloat(slippage) / 100)).toFixed(6);
-                    
-                    quote = {
-                        outTokenAmount: amountOut,
-                        priceImpact: '0',
-                        feeTier: FEE_TIER.PERCENT_00_05, // 0.05% fee
-                        source: 'fallback'
-                    };
-                }
+                // Get real quote from SDK
+                const quote = await gswap.quoting.quoteExactInput(
+                    tokenIn,
+                    tokenOut,
+                    amountIn.toString()
+                );
 
                 const quoteResult = {
                     amountOut: quote.outTokenAmount.toString(),
                     priceImpact: quote.priceImpact.toString(),
-                    fee: quote.feeTier || quote.fee || FEE_TIER.PERCENT_00_05,
+                    fee: quote.feeTier || FEE_TIER.PERCENT_00_05,
                     route: [tokenIn, tokenOut],
                     timestamp: new Date().toISOString(),
-                    source: quote.source || 'real-sdk'
+                    source: 'real-sdk'
                 };
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     success: true,
                     quote: quoteResult,
-                    endpoint: 'real-sdk',
                     timestamp: new Date().toISOString()
                 }));
                 
@@ -313,7 +236,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Swap endpoint - using real SDK
+    // Swap endpoint - using real SDK only
     if (path === '/api/swap' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -328,14 +251,6 @@ const server = http.createServer((req, res) => {
                 console.log(`🔄 Swap request: ${amountIn} ${tokenIn} → ${tokenOut}`);
                 console.log(`🔍 Wallet: ${walletAddress}`);
                 
-                if (!walletAddress) {
-                    throw new Error('Wallet address is required');
-                }
-                
-                if (!privateKey || privateKey.trim() === '') {
-                    throw new Error('Private key is required for real transactions');
-                }
-
                 if (!quote) {
                     throw new Error('Quote is required for swap execution');
                 }
@@ -353,7 +268,7 @@ const server = http.createServer((req, res) => {
                     await connectEventSocket();
                 }
 
-                // Execute real swap using SDK with better error handling
+                // Execute real swap using SDK
                 let swapResult;
                 try {
                     // Use proper fee tier from SDK (500 = 0.05% fee)
@@ -390,86 +305,48 @@ const server = http.createServer((req, res) => {
                             amountOutMinimum: amountOutMinimum
                         }
                     );
-                } catch (swapError) {
-                    console.error(`❌ SDK swap failed: ${swapError.message}`);
                     
-                    // Check if it's a validation error (invalid private key, insufficient balance, etc.)
-                    if (swapError.message.includes('400') || swapError.message.includes('validation')) {
-                        throw new Error(`Swap validation failed: ${swapError.message}. Please check your private key and wallet balance.`);
-                    }
+                    console.log(`✅ Real swap initiated: ${swapResult.txId}`);
                     
-                    // Check if it's a pool availability error
-                    if (swapError.message.includes('No pools available') || swapError.message.includes('pool')) {
-                        throw new Error(`No trading pool available for ${tokenIn} → ${tokenOut}. This pair may not be supported.`);
-                    }
-                    
-                    // Check if it's a bundler connectivity issue
-                    if (swapError.message.includes('bundler') || swapError.message.includes('connection')) {
-                        throw new Error(`Bundler connectivity issue: ${swapError.message}. Please try again.`);
-                    }
-                    
-                    // Check if it's a transaction submission error
-                    if (swapError.message.includes('submit') || swapError.message.includes('broadcast')) {
-                        throw new Error(`Transaction submission failed: ${swapError.message}. Please check network connectivity.`);
-                    }
-                    
-                    // Re-throw other errors
-                    throw swapError;
-                }
-
-                console.log(`✅ Real swap initiated: ${swapResult.txId}`);
-
-                // Wait for transaction completion using proper SDK method
-                try {
-                    console.log(`⏳ Waiting for transaction completion: ${swapResult.txId}`);
-                    
-                    // Use the SDK's built-in wait method with timeout
-                    const completed = await swapResult.wait();
-                    console.log(`✅ Real swap completed: ${completed.transactionHash}`);
-
-                    res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({
-                        success: true,
-                        transactionHash: completed.transactionHash,
-                        txId: swapResult.txId,
-                        amountOut: quote.amountOut,
-                        isSimulated: false,
-                        status: 'completed',
-                        timestamp: new Date().toISOString()
-                    }));
-                } catch (waitError) {
-                    console.error('❌ Swap wait failed:', waitError.message);
-                    
-                    // Check if it's a timeout or connection issue
-                    if (waitError.message.includes('timeout') || waitError.message.includes('connection')) {
-                        console.log('🔄 Transaction may still be processing on-chain');
+                    // Wait for transaction completion with timeout
+                    try {
+                        console.log(`⏳ Waiting for transaction completion: ${swapResult.txId}`);
+                        const completed = await Promise.race([
+                            swapResult.wait(),
+                            new Promise((_, reject) => 
+                                setTimeout(() => reject(new Error('Transaction timeout')), 30000)
+                            )
+                        ]);
                         
-                        // Return pending status with more detailed message
+                        console.log(`✅ Real swap completed: ${swapResult.txId}`);
+                        
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             success: true,
-                            transactionHash: 'PENDING',
-                            txId: swapResult.txId || 'unknown',
+                            txId: swapResult.txId,
+                            status: 'COMPLETED',
                             amountOut: quote.amountOut,
-                            isSimulated: false,
-                            status: 'pending',
-                            message: 'Transaction submitted to blockchain, awaiting confirmation',
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            source: 'real-sdk'
                         }));
-                    } else {
-                        // For other errors, still return pending but with error info
+                        
+                    } catch (waitError) {
+                        console.log(`⚠️ Swap wait failed: ${waitError.message}`);
+                        
                         res.writeHead(200, { 'Content-Type': 'application/json' });
                         res.end(JSON.stringify({
                             success: true,
-                            transactionHash: 'PENDING',
-                            txId: swapResult.txId || 'unknown',
+                            txId: swapResult.txId,
+                            status: 'PENDING',
                             amountOut: quote.amountOut,
-                            isSimulated: false,
-                            status: 'pending',
-                            message: `Transaction initiated but monitoring failed: ${waitError.message}`,
-                            timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                            source: 'real-sdk'
                         }));
                     }
+                    
+                } catch (swapError) {
+                    console.error(`❌ Swap execution failed: ${swapError.message}`);
+                    throw new Error(`Swap failed: ${swapError.message}`);
                 }
                 
             } catch (error) {
@@ -485,7 +362,7 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Balance endpoint - using real SDK
+    // Balance endpoint - using real SDK only
     if (path === '/api/balance' && method === 'POST') {
         let body = '';
         req.on('data', chunk => {
@@ -503,36 +380,19 @@ const server = http.createServer((req, res) => {
                     throw new Error('SDK not initialized');
                 }
 
-                // Get real balances from SDK with error handling
-                let balances;
-                try {
-                    const assets = await gswap.assets.getUserAssets(walletAddress, 1, 100);
-                    
-                    balances = assets.tokens.map(token => ({
-                        symbol: token.symbol,
-                        balance: token.quantity,
-                        contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', // Placeholder
-                        decimals: token.decimals,
-                        verified: token.verify,
-                        image: token.image
-                    }));
-                    
-                    console.log(`✅ Real balances retrieved: ${balances.length} tokens`);
-                } catch (sdkError) {
-                    console.log(`⚠️ SDK balance call failed: ${sdkError.message}`);
-                    
-                    // Fallback to simulated balances
-                    balances = [
-                        { symbol: 'GALA', balance: '1500.6200', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/gala-gala-logo.png' },
-                        { symbol: 'GUSDC', balance: '0.0000', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 6, verified: true, image: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png' },
-                        { symbol: 'FILM', balance: '0.9657', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/film-token-film-logo.png' },
-                        { symbol: 'GOSMI', balance: '0.0000', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/gosmi-gosmi-logo.png' },
-                        { symbol: 'ETIME', balance: '0.0000', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/etime-etime-logo.png' },
-                        { symbol: 'GTON', balance: '0.0000', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/gton-gton-logo.png' },
-                        { symbol: 'GMUSIC', balance: '0.0000', contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', decimals: 8, verified: true, image: 'https://cryptologos.cc/logos/gmusic-gmusic-logo.png' }
-                    ];
-                    console.log(`🔄 Using fallback balances: ${balances.length} tokens`);
-                }
+                // Get real balances from SDK (max limit is 20)
+                const assets = await gswap.assets.getUserAssets(walletAddress, 1, 20);
+                
+                const balances = assets.tokens.map(token => ({
+                    symbol: token.symbol,
+                    balance: token.quantity,
+                    contractAddress: '0x15D4c048F83bd7e37d49eA4C83a07267Ec4203dA', // Placeholder
+                    decimals: token.decimals,
+                    verified: token.verify,
+                    image: token.image
+                }));
+                
+                console.log(`✅ Real balances retrieved: ${balances.length} tokens`);
 
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({

@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GalaSwap Trading Bot - Server-Side Edition</title>
+    <!-- Version: 9.1 - Button Fix Update -->
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://unpkg.com/elliptic@6.5.4/dist/elliptic.min.js"></script>
     <script src="https://unpkg.com/js-sha3@0.8.0/dist/sha3.min.js"></script>
     <script src="https://unpkg.com/json-stringify-deterministic@1.0.1/index.js"></script>
+    <script src="enhanced-statistics.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -377,6 +379,13 @@
             overflow-y: auto;
         }
         
+        /* Force top row panels to have equal heights */
+        .top-row-grid .panel {
+            height: 300px !important;
+            min-height: 300px !important;
+            max-height: 300px !important;
+        }
+        
         /* Ensure bottom panels container takes full width */
         .bottom-panels-container .three-panel-grid,
         .bottom-panels-container .top-row-grid,
@@ -591,7 +600,16 @@
         }
         
         .bottom-panels-container > .panel:nth-child(4),
-        .bottom-panels-container > .panel:nth-child(5),
+        .bottom-panels-container > .panel:nth-child(5) {
+            grid-row: 2 / 3;
+            grid-column: auto;
+            height: 280px !important;
+            max-height: 280px !important;
+            overflow: hidden !important;
+            position: relative !important;
+        }
+        
+        /* Token Balances & Portfolio panel - make it taller to match other panels */
         .bottom-panels-container > .panel:nth-child(6) {
             grid-row: 2 / 3;
             grid-column: auto;
@@ -1138,13 +1156,11 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <h1>🚀 GalaSwap Trading Bot v9.0 - Server-Side Edition</h1>
+                <h1>🚀 GalaSwap Trading Bot v9.1</h1>
                 <p>Real On-Chain Trading via Local Server</p>
                 <p id="modeBanner" style="font-size: 12px; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0;">🔒 TRADE CAP - Small trades (5-25 GALA) | 🏆 COMPETITION MODE</p>
-        <p id="simulationWarning" style="font-size: 11px; color: #4caf50; background: rgba(76, 175, 80, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0; border: 1px solid #4caf50;">✅ SERVER-SIDE: Real trading via localhost:3000</p>
-        <p id="sdkNote" style="font-size: 11px; color: #2196f3; background: rgba(33, 150, 243, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0; border: 1px solid #2196f3;">🌐 SERVER MODE: Bypasses browser CORS restrictions</p>
                 <p id="serverStatus" style="font-size: 11px; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0; border: 1px solid #ff9800;">🔄 Server Status: Checking connection...</p>
-                <p style="font-size: 12px; color: #555;">Version 9.0 - Server-Side Implementation</p>
+                <p style="font-size: 12px; color: #555;">Version 9.1</p>
             </div>
             <div class="header-center">
                 <div class="mode-toggles" style="display: flex; gap: 8px; justify-content: center;">
@@ -1195,10 +1211,6 @@
                 </div>
                 <div class="wallet-header-connect" id="walletHeaderConnect">
                     <button onclick="connectWallet()" class="header-btn">🔗 Connect Wallet</button>
-                </div>
-                <!-- Test SDK button - always visible -->
-                <div style="margin-top: 10px;">
-                    <button onclick="testSDKConnection()" class="header-btn" style="background: #2196F3;">🚀 Test SDK</button>
                 </div>
                 <!-- Private key input - always visible -->
                 <div style="margin-top: 15px; background: rgba(255, 255, 255, 0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
@@ -1522,6 +1534,12 @@
             <!-- Bottom Right: Token Balances & Portfolio -->
             <div class="panel">
                 <h3>💰 Token Balances & Portfolio</h3>
+                
+                <!-- Balance Update Timer -->
+                <div id="balance-update-timer" style="font-size: 11px; color: #00ff88; margin: 2px 0; text-align: center; padding: 2px; background: rgba(0,255,136,0.1); border-radius: 3px;">
+                    ⏱️ Last updated: Never
+                </div>
+                
                 <div class="balance-list" id="balanceList">
                     <div class="token-item">
                         <div class="token-name">Loading balances...</div>
@@ -1781,24 +1799,36 @@
         // Check server status
         async function checkServerStatus() {
             try {
+                // Add timeout to prevent hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+                
                 const response = await fetch('http://localhost:3000/api/health', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
                 
                 if (response.ok) {
                     const data = await response.json();
-                    updateServerStatus('success', `🟢 Server Connected: ${data.message}`);
+                    updateServerStatus('success', `🟢 Server Connected: ${data.status}`);
                     logMessage('✅ Server connection successful', 'success');
                 } else {
                     updateServerStatus('error', '🔴 Server Error: Connection failed');
                     logMessage('❌ Server connection failed', 'error');
                 }
             } catch (error) {
-                updateServerStatus('error', '🔴 Server Offline: localhost:3000 not responding');
-                logMessage('❌ Server offline - make sure to run: node simple-server.js', 'error');
+                if (error.name === 'AbortError') {
+                    updateServerStatus('error', '🔴 Server Timeout: Taking too long to respond');
+                    logMessage('⏰ Server timeout - check if server is running', 'error');
+                } else {
+                    updateServerStatus('error', '🔴 Server Offline: localhost:3000 not responding');
+                    logMessage('❌ Server offline - make sure to run: node real-trading-server-clean.js', 'error');
+                }
             }
         }
 
@@ -1820,8 +1850,30 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Check server status on page load
-            checkServerStatus();
+            console.log('🚀 DOMContentLoaded event fired - starting initialization');
+            
+            // Check server status on page load (non-blocking)
+            checkServerStatus().catch(error => {
+                console.log('Server status check failed:', error);
+            });
+            
+            // Clear test tokens from localStorage on page load
+            const savedBalances = localStorage.getItem('lastKnownBalances');
+            if (savedBalances) {
+                try {
+                    const balances = JSON.parse(savedBalances);
+                    const cleanedBalances = {};
+                    Object.keys(balances).forEach(key => {
+                        if (!key.includes('DEXT') && !key.includes('none')) {
+                            cleanedBalances[key] = balances[key];
+                        }
+                    });
+                    localStorage.setItem('lastKnownBalances', JSON.stringify(cleanedBalances));
+                    console.log('🧹 Cleaned test tokens from localStorage');
+                } catch (e) {
+                    console.log('⚠️ Error cleaning test tokens:', e);
+                }
+            }
             
             // Load all persistent data
             loadTransactionHistory();
@@ -1831,6 +1883,52 @@
             
             // Load private key from storage on page load
             loadPrivateKey();
+            
+            // Update wallet status UI after loading
+            updateWalletStatus();
+            
+            // Initialize balance update timer if we have saved data
+            const savedUpdateTime = localStorage.getItem('lastSuccessfulBalanceUpdate');
+            if (savedUpdateTime) {
+                lastSuccessfulBalanceUpdate = new Date(savedUpdateTime);
+                startBalanceUpdateTimer();
+            } else {
+                // Start timer with current time if no saved data
+                lastSuccessfulBalanceUpdate = new Date();
+                startBalanceUpdateTimer();
+            }
+            
+            // Initialize with known balances if no saved data exists
+            const savedBalancesCheck = localStorage.getItem('lastKnownBalances');
+            if (!savedBalancesCheck && walletConnected) {
+                // Set initial known balances based on your actual wallet
+                const initialBalances = {
+                    'GALA|Unit|none|none': 1459.64,
+                    'GUSDC|Unit|none|none': 0.67,
+                    'FILM|Unit|none|none': 0.97,
+                    'GMUSIC|Unit|none|none': 0.06,
+                    'ETIME|Unit|none|none': 0,
+                    'GTON|Unit|none|none': 0,
+                    'GOSMI|Unit|none|none': 0
+                };
+                
+                localStorage.setItem('lastKnownBalances', JSON.stringify(initialBalances));
+                Object.assign(tokenBalances, initialBalances);
+                galaBalance = 1459.64;
+                
+                // Set initial update time
+                lastSuccessfulBalanceUpdate = new Date();
+                localStorage.setItem('lastSuccessfulBalanceUpdate', lastSuccessfulBalanceUpdate.toISOString());
+                startBalanceUpdateTimer();
+                
+                // Schedule first auto-refresh in 30 seconds
+                balanceSuccessTimeout = setTimeout(() => {
+                    logMessage(`🔄 Auto-refreshing balances (30s interval)...`, 'info');
+                    loadAllTokenBalances();
+                }, balanceSuccessDelay);
+                
+                logMessage('📋 Initialized with known balances', 'info');
+            }
             
             setTimeout(enforceLogHeights, 100);
             setTimeout(enforceLogHeights, 500);
@@ -2077,6 +2175,54 @@
                     });
                 }
             }, 2000);
+            
+            // Initialize the bot
+            console.log('🎯 About to call initBot()');
+            initBot();
+            console.log('✅ initBot() completed');
+            
+            // Debug: Check if functions are accessible
+            console.log('🔍 Button functions check:');
+            console.log('startBot:', typeof startBot);
+            console.log('stopBot:', typeof stopBot);
+            console.log('connectWallet:', typeof connectWallet);
+            console.log('setPrivateKey:', typeof setPrivateKey);
+            console.log('clearPrivateKey:', typeof clearPrivateKey);
+            console.log('openConfig:', typeof openConfig);
+            console.log('disconnectWallet:', typeof disconnectWallet);
+            
+            // Test button click handlers
+            setTimeout(() => {
+                const startBtn = document.querySelector('button[onclick="startBot()"]');
+                const stopBtn = document.querySelector('button[onclick="stopBot()"]');
+                const connectBtn = document.querySelector('button[onclick="connectWallet()"]');
+                
+                console.log('🔍 Button elements found:');
+                console.log('Start button:', startBtn);
+                console.log('Stop button:', stopBtn);
+                console.log('Connect button:', connectBtn);
+                
+                if (startBtn) {
+                    startBtn.addEventListener('click', (e) => {
+                        console.log('✅ Start button clicked via addEventListener');
+                        startBot();
+                    });
+                }
+                
+                if (stopBtn) {
+                    stopBtn.addEventListener('click', (e) => {
+                        console.log('✅ Stop button clicked via addEventListener');
+                        stopBot();
+                    });
+                }
+                
+                if (connectBtn) {
+                    connectBtn.addEventListener('click', (e) => {
+                        console.log('✅ Connect button clicked via addEventListener');
+                        connectWallet();
+                    });
+                }
+            }, 1000);
         });
         
 
@@ -2096,7 +2242,28 @@
         let tradingPairs = [];
         let totalTrades = 0;
         
-        // Trading statistics for persistent storage
+        // Enhanced statistics using SDK API calls
+        let marketDataCollector = new MarketDataCollector();
+        let marketAnalysisEngine = new MarketAnalysisEngine(marketDataCollector);
+        let tradingSignalsGenerator = new TradingSignalsGenerator(marketAnalysisEngine);
+        let tradeStatisticsTracker = new TradeStatisticsTracker();
+        let performanceRiskAnalyzer = new PerformanceRiskAnalyzer(tradeStatisticsTracker);
+        let portfolioManager = new PortfolioManager();
+        
+        // Balance retry system
+        let lastKnownBalances = {};
+        let balanceRetryCount = 0;
+        let maxBalanceRetries = 3;
+        let balanceRetryDelay = 5000; // 5 seconds after fail
+        let balanceSuccessDelay = 30000; // 30 seconds after success
+        let lastBalanceFetchTime = 0;
+        let balanceFetchCooldown = 2000; // 2 seconds minimum between requests
+        let balanceRetryTimeout = null;
+        let balanceSuccessTimeout = null; // Timer for successful refresh
+        let lastSuccessfulBalanceUpdate = null; // Timestamp of last successful balance fetch
+        let balanceUpdateTimer = null; // Timer for displaying time since last update
+
+        // Legacy trading statistics for backward compatibility
         let tradingStats = {
             totalTrades: 0,
             totalProfit: 0,
@@ -2226,6 +2393,28 @@
                     if (config.tradeCapMode !== undefined) tradeCapMode = config.tradeCapMode;
                     if (config.competitionMode !== undefined) competitionMode = config.competitionMode;
                     
+                    // Restore trading mode
+                    if (config.tradingMode) {
+                        tradingMode = config.tradingMode;
+                        console.log(`🔄 Restored trading mode: ${tradingMode}`);
+                    }
+                    
+                    // Restore configuration settings
+                    if (config.conservativeConfig) {
+                        Object.assign(conservativeConfig, config.conservativeConfig);
+                    }
+                    if (config.tradeCapConfig) {
+                        Object.assign(tradeCapConfig, config.tradeCapConfig);
+                    }
+                    if (config.competitionConfig) {
+                        Object.assign(competitionConfig, config.competitionConfig);
+                    }
+                    
+                    // Restore scan interval
+                    if (config.scanInterval) {
+                        scanInterval = config.scanInterval;
+                    }
+                    
                     console.log('⚙️ Loaded bot configuration:', config);
                 }
             } catch (error) {
@@ -2239,10 +2428,16 @@
                 const config = {
                     tradeCapMode: tradeCapMode,
                     competitionMode: competitionMode,
+                    tradingMode: tradingMode,
+                    conservativeConfig: conservativeConfig,
+                    tradeCapConfig: tradeCapConfig,
+                    competitionConfig: competitionConfig,
+                    scanInterval: scanInterval,
                     lastUpdated: new Date().toISOString()
                 };
                 
                 localStorage.setItem('galaswap_bot_config', JSON.stringify(config));
+                console.log('💾 Saved bot configuration:', config);
             } catch (error) {
                 console.error('Failed to save bot configuration:', error);
             }
@@ -2473,6 +2668,9 @@
                     logMessage('✅ Wallet reconnected automatically', 'success');
                     logMessage(`✅ Wallet connected: ${walletAddress}`, 'success');
                     
+                    // Update wallet status UI
+                    updateWalletStatus();
+                    
                     // Initialize SDK for loaded wallet
                     setTimeout(async () => {
                         await initializeSDK();
@@ -2540,6 +2738,9 @@
                 logMessage('✅ Private key set and wallet connected', 'success');
                 logMessage(`🔐 Wallet address: ${walletAddress}`, 'info');
                 
+                // Update wallet status UI
+                updateWalletStatus();
+                
             } catch (error) {
                 logMessage(`❌ Could not set private key: ${error.message}`, 'error');
             }
@@ -2561,6 +2762,10 @@
                 }
                 
                 logMessage('🗑️ Private key cleared from storage', 'info');
+                
+                // Update wallet status UI
+                updateWalletStatus();
+                
             } catch (error) {
                 logMessage('❌ Could not clear private key from storage', 'error');
             }
@@ -2892,7 +3097,7 @@
             gatewayBaseUrl: 'https://gateway-mainnet.galachain.com',
             dexContractBasePath: '/api/asset/dexv3-contract',
             tokenContractBasePath: '/api/asset/token-contract',
-            bundlerBaseUrl: 'https://bundle-backend-prod1.defi.gala.com',
+            bundlerBaseUrl: 'https://dex-backend-prod1.defi.gala.com',
             bundlingAPIBasePath: '/bundle',
             dexBackendBaseUrl: 'https://api-galaswap.gala.com', // Correct GalaSwap API
             transactionWaitTimeoutMs: 300000, // 5 minutes
@@ -2933,7 +3138,7 @@
                     const wsEndpoints = [
                         this.config.bundlerBaseUrl.replace('https://', 'wss://') + '/ws',
                         this.config.bundlerBaseUrl.replace('https://', 'wss://') + '/socket',
-                        'wss://bundle-backend-prod1.defi.gala.com/ws'
+                        'wss://dex-backend-prod1.defi.gala.com/ws'
                     ];
                     
                     for (const wsUrl of wsEndpoints) {
@@ -3118,7 +3323,7 @@
                     gatewayBaseUrl: 'https://gateway-mainnet.galachain.com',
                     dexContractBasePath: '/api/asset/dexv3-contract',
                     tokenContractBasePath: '/api/asset/token-contract',
-                    bundlerBaseUrl: 'https://bundle-backend-prod1.defi.gala.com',
+                    bundlerBaseUrl: 'https://dex-backend-prod1.defi.gala.com',
                     bundlingAPIBasePath: '/bundle',
                     dexBackendBaseUrl: 'https://dex-backend-prod1.defi.gala.com',
                     transactionWaitTimeoutMs: 300000, // 5 minutes
@@ -3150,7 +3355,23 @@
             const walletHeaderConnect = document.getElementById('walletHeaderConnect');
             const signingStatus = document.getElementById('signingStatusHeader');
             
-            if (walletConnected) {
+            // Check if both wallet address and private key are present
+            const hasWalletAddress = walletConnected && walletAddress;
+            const hasPrivateKey = privateKeySet && privateKey;
+            const isFullyConnected = hasWalletAddress && hasPrivateKey;
+            
+            // Debug logging
+            console.log('Wallet Status Debug:', {
+                walletConnected,
+                walletAddress,
+                privateKeySet,
+                hasPrivateKey: !!privateKey,
+                hasWalletAddress,
+                hasPrivateKey,
+                isFullyConnected
+            });
+            
+            if (isFullyConnected) {
                 if (walletBtn) walletBtn.textContent = '🔗 Wallet Connected';
                 if (walletHeader) walletHeader.style.display = 'block';
                 if (walletHeaderConnect) walletHeaderConnect.style.display = 'none';
@@ -3158,7 +3379,17 @@
                     signingStatus.textContent = '✅ Ready';
                     signingStatus.style.color = '#4CAF50';
                 }
+            } else if (hasWalletAddress && !hasPrivateKey) {
+                // Wallet address present but no private key
+                if (walletBtn) walletBtn.textContent = '🔑 Set Private Key';
+                if (walletHeader) walletHeader.style.display = 'block';
+                if (walletHeaderConnect) walletHeaderConnect.style.display = 'none';
+                if (signingStatus) {
+                    signingStatus.textContent = '⚠️ No Key';
+                    signingStatus.style.color = '#ff9800';
+                }
             } else {
+                // No wallet connection
                 if (walletBtn) walletBtn.textContent = '🔗 Connect Wallet';
                 if (walletHeader) walletHeader.style.display = 'none';
                 if (walletHeaderConnect) walletHeaderConnect.style.display = 'block';
@@ -3170,91 +3401,6 @@
         }
         
         // Test SDK connection function
-        async function testSDKConnection() {
-            try {
-                logMessage('🧪 Testing SDK connection...', 'info');
-                
-                if (!walletConnected) {
-                    logMessage('❌ Please connect wallet first', 'error');
-                    return;
-                }
-                
-                if (!gswapSDK) {
-                    logMessage('❌ SDK not initialized', 'error');
-                    return;
-                }
-                
-                // Test API connectivity first
-                logMessage('🔍 Testing API connectivity...', 'info');
-                try {
-                    const healthResponse = await fetch(`${API_BASE}/health`);
-                    if (healthResponse.ok) {
-                        logMessage('✅ API connectivity confirmed', 'success');
-                    } else {
-                        logMessage(`⚠️ API health check failed: ${healthResponse.status}`, 'warning');
-                    }
-                } catch (healthError) {
-                    logMessage(`⚠️ API health check error: ${healthError.message}`, 'warning');
-                }
-                
-                // Test balance loading
-                logMessage('💰 Testing balance loading...', 'info');
-                logMessage(`💰 Current GALA balance: ${galaBalance.toFixed(4)}`, 'info');
-                if (galaBalance === 0) {
-                    logMessage('⚠️ GALA balance is 0 - this will prevent trading', 'warning');
-                    logMessage('💡 Suggestion: Try refreshing balances or check wallet connection', 'info');
-                } else {
-                    logMessage(`✅ GALA balance looks good: ${galaBalance.toFixed(4)}`, 'success');
-                }
-                
-                // Test quote functionality
-                logMessage('📊 Testing SDK quote functionality...', 'info');
-                
-                // Try multiple token pairs to find one with liquidity
-                const testPairs = [
-                    { tokenIn: 'GALA|Unit|none|none', tokenOut: 'GUSDC|Unit|none|none', amount: '10' },
-                    { tokenIn: 'GALA|Unit|none|none', tokenOut: 'GTON|Unit|none|none', amount: '10' },
-                    { tokenIn: 'GUSDC|Unit|none|none', tokenOut: 'GALA|Unit|none|none', amount: '5' }
-                ];
-                
-                let quoteSuccess = false;
-                for (const pair of testPairs) {
-                    try {
-                        logMessage(`📊 Testing pair: ${pair.tokenIn} → ${pair.tokenOut}`, 'info');
-                        const quote = await gswapSDK.quoteExactInput(
-                            pair.tokenIn.replace(/\$/g, '|'),
-                            pair.tokenOut.replace(/\$/g, '|'),
-                            pair.amount
-                        );
-                        
-                        logMessage(`✅ SDK quote test successful: ${pair.amount} ${pair.tokenIn} → ${quote.outTokenAmount} ${pair.tokenOut}`, 'success');
-                        quoteSuccess = true;
-                        break;
-                    } catch (error) {
-                        logMessage(`⚠️ Pair ${pair.tokenIn} → ${pair.tokenOut} failed: ${error.message}`, 'warning');
-                        continue;
-                    }
-                }
-                
-                if (!quoteSuccess) {
-                    logMessage('⚠️ All quote endpoints failed - this suggests API endpoint issues', 'warning');
-                    logMessage('💡 The bot may still work for trading if the swap endpoints are different', 'info');
-                    logMessage('🚀 Proceeding with SDK test completion...', 'info');
-                }
-                
-                // Test event socket
-                if (gswapSDK.eventSocketConnected) {
-                    logMessage('✅ Event socket connected - Real-time monitoring active', 'success');
-                } else {
-                    logMessage('⚠️ Event socket not connected - Limited monitoring', 'warning');
-                }
-                
-                logMessage('🎉 SDK connection test completed successfully!', 'success');
-                
-            } catch (error) {
-                logMessage(`❌ SDK test failed: ${error.message}`, 'error');
-            }
-        }
 
         // Known tokens on GalaSwap - focusing on most liquid pairs
         const KNOWN_TOKENS = [
@@ -3537,7 +3683,7 @@
             static eventSocket = null;
             static eventSocketConnected = false;
 
-            static async connectEventSocket(bundlerBaseUrl = 'https://bundle-backend-prod1.defi.gala.com') {
+            static async connectEventSocket(bundlerBaseUrl = 'https://dex-backend-prod1.defi.gala.com') {
                 try {
                     const wsUrl = bundlerBaseUrl.replace('https://', 'wss://') + '/ws';
                     Events.eventSocket = new WebSocket(wsUrl);
@@ -3599,7 +3745,7 @@
                 this.gatewayBaseUrl = options.gatewayBaseUrl || 'https://gateway-mainnet.galachain.com';
                 this.dexContractBasePath = options.dexContractBasePath || '/api/asset/dexv3-contract';
                 this.tokenContractBasePath = options.tokenContractBasePath || '/api/asset/token-contract';
-                this.bundlerBaseUrl = options.bundlerBaseUrl || 'https://bundle-backend-prod1.defi.gala.com';
+                this.bundlerBaseUrl = options.bundlerBaseUrl || 'https://dex-backend-prod1.defi.gala.com';
                 this.bundlingAPIBasePath = options.bundlingAPIBasePath || '/bundle';
                 this.dexBackendBaseUrl = options.dexBackendBaseUrl || 'https://dex-backend-prod1.defi.gala.com';
                 this.transactionWaitTimeoutMs = options.transactionWaitTimeoutMs || 300000;
@@ -3854,6 +4000,9 @@
                 walletAddress = 'eth|089018e67E35BeAAb3F7c28cb0d64dBA04D9268F';
                 walletConnected = true;
                 
+                // Save wallet address to localStorage
+                localStorage.setItem('walletAddress', walletAddress);
+                
                 // Initialize GSwap SDK
                 await initializeSDK();
                 
@@ -4089,6 +4238,7 @@
             logMessage('All data cleared successfully!', 'success');
         }
 
+
         // Refresh balance function
         function refreshBalance() {
             console.log('Refresh balance clicked');
@@ -4106,37 +4256,103 @@
         async function loadAllTokenBalances() {
             if (!walletConnected) return;
             
+            // Check cooldown to prevent API limit hits
+            const now = Date.now();
+            if (now - lastBalanceFetchTime < balanceFetchCooldown) {
+                logMessage(`⏳ Balance fetch cooldown active, using last known balances`, 'info');
+                displayLastKnownBalances();
+                return;
+            }
+            
+            lastBalanceFetchTime = now;
+            
             try {
-                logMessage('Fetching all token balances from wallet...', 'info');
+                logMessage('🔄 Fetching live token balances from server...', 'info');
                 
-                // For now, we'll use the known balances you provided
-                // In production, this would fetch from GalaChain API
-                
-                // Get GALA balance from localStorage or use default
-                const lastKnownBalance = localStorage.getItem('lastKnownBalance');
-                const galaAmount = lastKnownBalance ? parseFloat(lastKnownBalance) : 1500.62;
-                
-                const walletBalances = {
-                    'GALA|Unit|none|none': galaAmount,
-                    'FILM|Unit|none|none': 0.96570995,
-                    'GMUSIC|Unit|none|none': 0.05709519,
-                    'GUSDC|Unit|none|none': 0,
-                    'ETIME|Unit|none|none': 0,
-                    'GTON|Unit|none|none': 0,
-                    'GOSMI|Unit|none|none': 0,
-                };
-                
-                // Update the global galaBalance variable
-                galaBalance = galaAmount;
-                
-                // Update token balances
-                for (const [token, balance] of Object.entries(walletBalances)) {
-                    tokenBalances[token] = balance;
+                // Use the global walletAddress variable instead of localStorage
+                if (!walletAddress) {
+                    throw new Error('No wallet address found');
                 }
                 
-                // Debug logging
-                logMessage(`🔍 Debug: galaBalance = ${galaBalance}, tokenBalances[GALA] = ${tokenBalances['GALA|Unit|none|none']}`, 'info');
-                logMessage(`🔍 Debug: tokenPrices[GALA] = ${tokenPrices['GALA|Unit|none|none']}`, 'info');
+                const cleanAddress = walletAddress.replace('eth|', '');
+                logMessage(`📍 Fetching balance from server for address: ${cleanAddress}`, 'info');
+                
+                const response = await fetch(`http://localhost:3000/api/balance?address=eth%7C${cleanAddress}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    logMessage(`📊 Server balance response received`, 'info');
+                    
+                    if (data.success && data.balances && data.balances.length > 0) {
+                        // Debug: Log all tokens received from server
+                        logMessage(`📊 Server returned ${data.balances.length} tokens: ${data.balances.map(b => `${b.symbol}:${b.balance}`).join(', ')}`, 'info');
+                        
+                        // Process server balance data - handle all tokens dynamically
+                        data.balances.forEach(balance => {
+                            const tokenKey = `${balance.symbol}|Unit|none|none`;
+                            const tokenBalance = parseFloat(balance.balance) || 0;
+                            
+                            // Update token balances
+                            tokenBalances[tokenKey] = tokenBalance;
+                            lastKnownBalances[tokenKey] = tokenBalance;
+                            
+                            // Special handling for GALA
+                            if (balance.symbol === 'GALA') {
+                                galaBalance = tokenBalance;
+                                logMessage(`✅ Server GALA balance: ${galaBalance}`, 'success');
+                            }
+                            
+                            // Log important token balances
+                            if (['GALA', 'GUSDC', 'FILM', 'ETIME', 'GTON', 'GMUSIC', 'GOSMI'].includes(balance.symbol)) {
+                                logMessage(`📊 ${balance.symbol}: ${tokenBalance}`, 'info');
+                            }
+                        });
+                        
+                        // Save successful balances to localStorage
+                        localStorage.setItem('lastKnownBalances', JSON.stringify(lastKnownBalances));
+                        localStorage.setItem('lastKnownBalance', galaBalance.toString());
+                        
+                        // Clear any test tokens from cache
+                        const cleanedBalances = {};
+                        Object.keys(lastKnownBalances).forEach(key => {
+                            if (!key.includes('DEXT') && !key.includes('none')) {
+                                cleanedBalances[key] = lastKnownBalances[key];
+                            }
+                        });
+                        localStorage.setItem('lastKnownBalances', JSON.stringify(cleanedBalances));
+                        
+                        // Update successful balance timestamp
+                        lastSuccessfulBalanceUpdate = new Date();
+                        localStorage.setItem('lastSuccessfulBalanceUpdate', lastSuccessfulBalanceUpdate.toISOString());
+                        
+                        // Reset retry count on success
+                        balanceRetryCount = 0;
+                        
+                        // Start/restart the balance update timer
+                        startBalanceUpdateTimer();
+                        
+                        // Schedule next refresh in 30 seconds for successful updates
+                        if (balanceSuccessTimeout) {
+                            clearTimeout(balanceSuccessTimeout);
+                        }
+                        balanceSuccessTimeout = setTimeout(() => {
+                            logMessage(`🔄 Auto-refreshing balances (30s interval)...`, 'info');
+                            loadAllTokenBalances();
+                        }, balanceSuccessDelay);
+                        
+                        logMessage(`✅ Live balances updated successfully! Next refresh in 30s`, 'success');
+                        
+                    } else {
+                        throw new Error(`Server returned empty balances: ${data.message || 'No tokens found'}`);
+                    }
+                } else {
+                    throw new Error(`Server balance error: ${response.status} ${response.statusText}`);
+                }
                 
                 // Recalculate portfolio value
                 portfolioValue = calculatePortfolioValue();
@@ -4146,10 +4362,118 @@
                 
                 logMessage(`Portfolio value updated: $${portfolioValue.toFixed(2)}`, 'info');
                 
-                logMessage('All token balances updated successfully!', 'success');
-                
             } catch (error) {
-                logMessage(`Error loading token balances: ${error.message}`, 'error');
+                logMessage(`⚠️ Live balance fetch failed: ${error.message}`, 'warning');
+                logMessage(`🔄 Using last known balances and scheduling retry...`, 'info');
+                
+                // Display last known balances
+                displayLastKnownBalances();
+                
+                // Schedule retry if we haven't exceeded max retries
+                if (balanceRetryCount < maxBalanceRetries) {
+                    balanceRetryCount++;
+                    logMessage(`🔄 Retry ${balanceRetryCount}/${maxBalanceRetries} in ${balanceRetryDelay/1000} seconds...`, 'info');
+                    
+                    if (balanceRetryTimeout) {
+                        clearTimeout(balanceRetryTimeout);
+                    }
+                    
+                    balanceRetryTimeout = setTimeout(() => {
+                        loadAllTokenBalances();
+                    }, balanceRetryDelay);
+                } else {
+                    // After max retries, continue trying every 30 seconds indefinitely
+                    balanceRetryCount = 0; // Reset counter
+                    logMessage(`🔄 Initial retries complete. Continuing every 30 seconds indefinitely...`, 'info');
+                    
+                    if (balanceRetryTimeout) {
+                        clearTimeout(balanceRetryTimeout);
+                    }
+                    
+                    balanceRetryTimeout = setTimeout(() => {
+                        loadAllTokenBalances();
+                    }, 30000); // 30 seconds
+                }
+            }
+        }
+        
+        function displayLastKnownBalances() {
+            // Load last known balances from localStorage
+            const savedBalances = localStorage.getItem('lastKnownBalances');
+            if (savedBalances) {
+                try {
+                    const balances = JSON.parse(savedBalances);
+                    
+                    // Filter out test tokens (DEXT tokens and 'none' tokens)
+                    const filteredBalances = {};
+                    Object.keys(balances).forEach(key => {
+                        if (!key.includes('DEXT') && !key.includes('none')) {
+                            filteredBalances[key] = balances[key];
+                        }
+                    });
+                    
+                    Object.assign(tokenBalances, filteredBalances);
+                    
+                    // Load last successful update time
+                    const savedUpdateTime = localStorage.getItem('lastSuccessfulBalanceUpdate');
+                    if (savedUpdateTime) {
+                        lastSuccessfulBalanceUpdate = new Date(savedUpdateTime);
+                        startBalanceUpdateTimer();
+                    } else {
+                        // If no saved time, use current time for display
+                        lastSuccessfulBalanceUpdate = new Date();
+                        startBalanceUpdateTimer();
+                    }
+                    
+                    logMessage(`📋 Displaying last known balances`, 'info');
+                } catch (error) {
+                    logMessage(`⚠️ Failed to load last known balances: ${error.message}`, 'warning');
+                }
+            }
+            
+            // Update portfolio value with current balances
+            portfolioValue = calculatePortfolioValue();
+            updateStatus();
+            updateBalanceDisplay();
+        }
+        
+        function startBalanceUpdateTimer() {
+            // Clear existing timer
+            if (balanceUpdateTimer) {
+                clearInterval(balanceUpdateTimer);
+            }
+            
+            // Update immediately
+            updateBalanceUpdateDisplay();
+            
+            // Update every second
+            balanceUpdateTimer = setInterval(updateBalanceUpdateDisplay, 1000);
+        }
+        
+        function updateBalanceUpdateDisplay() {
+            if (!lastSuccessfulBalanceUpdate) return;
+            
+            const now = new Date();
+            const timeDiff = now - lastSuccessfulBalanceUpdate;
+            const seconds = Math.floor(timeDiff / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            let timeString;
+            if (hours > 0) {
+                timeString = `${hours}h ${minutes % 60}m ago`;
+            } else if (minutes > 0) {
+                timeString = `${minutes}m ${seconds % 60}s ago`;
+            } else {
+                timeString = `${seconds}s ago`;
+            }
+            
+            // Update the balance display with timestamp
+            const timestampElement = document.getElementById('balance-update-timer');
+            if (timestampElement) {
+                timestampElement.textContent = `⏱️ Last updated: ${timeString}`;
+            } else {
+                console.log('Timer element not found, creating fallback...');
             }
         }
 
@@ -4628,6 +4952,17 @@
         async function refreshAllBalances() {
             logMessage('🔄 Refreshing all balances...', 'info');
             
+            // Reset retry count for manual refresh
+            balanceRetryCount = 0;
+            if (balanceRetryTimeout) {
+                clearTimeout(balanceRetryTimeout);
+                balanceRetryTimeout = null;
+            }
+            if (balanceSuccessTimeout) {
+                clearTimeout(balanceSuccessTimeout);
+                balanceSuccessTimeout = null;
+            }
+            
             try {
                 // Step 1: Refresh wallet balance
                 await refreshBalance();
@@ -4746,6 +5081,14 @@
         function initializeBotDefaults() {
             logMessage('🔧 Initializing bot with safe default values...', 'info');
             
+            // Load saved configuration first
+            loadBotConfig();
+            
+            // Restore UI state after loading configuration
+            setTimeout(() => {
+                restoreUIState();
+            }, 100);
+            
             // Initialize token prices with fallback values
             KNOWN_TOKENS.forEach(token => {
                 if (!tokenPrices[token] || isNaN(tokenPrices[token])) {
@@ -4792,6 +5135,45 @@
             updateTokenDisplay();
             
             logMessage('✅ Bot initialized with safe defaults', 'success');
+        }
+
+        // Restore UI state from saved configuration
+        function restoreUIState() {
+            try {
+                // Restore trading mode radio buttons
+                const radioButtons = document.querySelectorAll('input[name="tradingMode"]');
+                radioButtons.forEach(radio => {
+                    radio.checked = (radio.value === tradingMode);
+                });
+                
+                // Restore trading mode select dropdown
+                const selectDropdown = document.getElementById('tradingModeSelect');
+                if (selectDropdown) {
+                    selectDropdown.value = tradingMode;
+                }
+                
+                // Update current mode display
+                updateCurrentModeDisplay(tradingMode);
+                
+                // Update mode banner
+                updateModeBanner();
+                
+                // Update scan interval input
+                const scanIntervalInput = document.getElementById('scanInterval');
+                if (scanIntervalInput) {
+                    scanIntervalInput.value = scanInterval;
+                }
+                
+                // Update configuration inputs based on current mode
+                const activeConfig = getActiveConfig();
+                updateModeUI(tradingMode, activeConfig);
+                
+                console.log(`🔄 Restored UI state for trading mode: ${tradingMode}`);
+                logMessage(`🔄 Restored trading mode: ${tradingMode.toUpperCase()}`, 'info');
+                
+            } catch (error) {
+                console.error('Failed to restore UI state:', error);
+            }
         }
 
         // Comprehensive test function to verify all fixes
@@ -4897,6 +5279,9 @@
                     logMessage(`📊 Server balance response received`, 'info');
                     
                     if (data.success && data.balances) {
+                        // Debug: Log all tokens received from server
+                        logMessage(`📊 Server returned ${data.balances.length} tokens: ${data.balances.map(b => `${b.symbol}:${b.balance}`).join(', ')}`, 'info');
+                        
                         // Process server balance data
                         data.balances.forEach(balance => {
                             if (balance.symbol === 'GALA') {
@@ -4907,8 +5292,15 @@
                                 tokenBalances['FILM|Unit|none|none'] = parseFloat(balance.balance) || 0;
                             } else if (balance.symbol === 'GOSMI') {
                                 tokenBalances['GOSMI|Unit|none|none'] = parseFloat(balance.balance) || 0;
-                            } else if (balance.symbol === 'USDC') {
-                                tokenBalances['USDC|Unit|none|none'] = parseFloat(balance.balance) || 0;
+                            } else if (balance.symbol === 'GUSDC') {
+                                tokenBalances['GUSDC|Unit|none|none'] = parseFloat(balance.balance) || 0;
+                                logMessage(`✅ Server GUSDC balance: ${parseFloat(balance.balance)}`, 'success');
+                            } else if (balance.symbol === 'ETIME') {
+                                tokenBalances['ETIME|Unit|none|none'] = parseFloat(balance.balance) || 0;
+                            } else if (balance.symbol === 'GTON') {
+                                tokenBalances['GTON|Unit|none|none'] = parseFloat(balance.balance) || 0;
+                            } else if (balance.symbol === 'GMUSIC') {
+                                tokenBalances['GMUSIC|Unit|none|none'] = parseFloat(balance.balance) || 0;
                             }
                         });
                     
@@ -7258,6 +7650,9 @@
                     break;
             }
             
+            // Save configuration to localStorage
+            saveBotConfig();
+            
             closeConfig();
         }
 
@@ -7305,6 +7700,24 @@
             
             // Log mode change
             logModeChange(mode, activeConfig);
+            
+            // Update radio buttons
+            const radioButtons = document.querySelectorAll('input[name="tradingMode"]');
+            radioButtons.forEach(radio => {
+                radio.checked = (radio.value === mode);
+            });
+            
+            // Update select dropdown
+            const selectDropdown = document.getElementById('tradingModeSelect');
+            if (selectDropdown) {
+                selectDropdown.value = mode;
+            }
+            
+            // Update current mode display
+            updateCurrentModeDisplay(mode);
+            
+            // Save bot configuration when mode changes
+            saveBotConfig();
         }
         
         // Get active configuration based on current mode
@@ -7447,10 +7860,7 @@
             }
         }
 
-        // Initialize the bot when page loads
-        window.onload = function() {
-            initBot();
-        };
+        // Bot initialization is handled in DOMContentLoaded event listener above
     </script>
 </body>
 </html>
