@@ -3150,7 +3150,8 @@
         // SAFETY PARAMETERS - CRITICAL FOR PROTECTION
         const RESERVE_GALA_FOR_FEES = 500; // Reserve 500 GALA for transaction fees
         const MAX_TOKEN_USAGE_PERCENT = 90; // Never spend more than 90% of any token
-        const MIN_GALA_FOR_TRADE = 10; // Minimum GALA required for any trade (including fees)
+        const MIN_GALA_FOR_GALA_TRADES = 10; // Minimum GALA required for trades involving GALA
+        const MIN_TOKEN_BALANCE_FOR_TRADE = 1; // Minimum token balance required for any trade
         
         // Trading Mode Configuration - v9.1.9 BUTTON FIX WORKING CACHE REFRESH
         let tradingMode = 'conservative'; // 'conservative', 'competition', 'tradecap'
@@ -5101,35 +5102,70 @@
         function calculateSafePositionSize(token, action, basePositionSize) {
             const tokenBalance = tokenBalances[token] || 0;
             const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
+            const isGalaToken = token === 'GALA|Unit|none|none';
             
-            // Safety check: Ensure we have minimum GALA for fees
-            if (galaBalance < MIN_GALA_FOR_TRADE) {
-                logMessage(`⚠️ Insufficient GALA for trading: ${galaBalance.toFixed(2)} GALA (minimum: ${MIN_GALA_FOR_TRADE} GALA)`, 'warning');
+            // Safety check: Ensure we have minimum token balance for any trade
+            if (tokenBalance < MIN_TOKEN_BALANCE_FOR_TRADE) {
+                logMessage(`⚠️ Insufficient ${getTokenSymbol(token)} balance for trading: ${tokenBalance.toFixed(4)} (minimum: ${MIN_TOKEN_BALANCE_FOR_TRADE})`, 'warning');
                 return 0;
             }
             
-            // Calculate available GALA after reserving for fees
-            const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
-            
-            if (availableGala < MIN_GALA_FOR_TRADE) {
-                logMessage(`⚠️ Insufficient GALA after fee reserve: ${availableGala.toFixed(2)} GALA (reserved: ${RESERVE_GALA_FOR_FEES} GALA)`, 'warning');
-                return 0;
+            // For GALA trades: Check GALA-specific requirements
+            if (isGalaToken) {
+                // Safety check: Ensure we have minimum GALA for GALA trades
+                if (galaBalance < MIN_GALA_FOR_GALA_TRADES) {
+                    logMessage(`⚠️ Insufficient GALA for GALA trading: ${galaBalance.toFixed(2)} GALA (minimum: ${MIN_GALA_FOR_GALA_TRADES} GALA)`, 'warning');
+                    return 0;
+                }
+                
+                // Calculate available GALA after reserving for fees
+                const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+                
+                if (availableGala < MIN_GALA_FOR_GALA_TRADES) {
+                    logMessage(`⚠️ Insufficient GALA after fee reserve: ${availableGala.toFixed(2)} GALA (reserved: ${RESERVE_GALA_FOR_FEES} GALA)`, 'warning');
+                    return 0;
+                }
+            } else {
+                // For non-GALA trades: Only check if we have enough GALA for transaction fees
+                if (galaBalance < RESERVE_GALA_FOR_FEES) {
+                    logMessage(`⚠️ Insufficient GALA for transaction fees: ${galaBalance.toFixed(2)} GALA (reserved: ${RESERVE_GALA_FOR_FEES} GALA)`, 'warning');
+                    return 0;
+                }
             }
             
             let safePositionSize = basePositionSize;
             
             if (action === 'buy') {
-                // For buy orders, limit based on available GALA
-                safePositionSize = Math.min(safePositionSize, availableGala);
-                
-                // Additional safety: never spend more than 90% of available GALA
-                const maxGalaUsage = availableGala * (MAX_TOKEN_USAGE_PERCENT / 100);
-                safePositionSize = Math.min(safePositionSize, maxGalaUsage);
-                
-                logMessage(`🛡️ SAFETY: Buy position limited to ${safePositionSize.toFixed(2)} GALA (available: ${availableGala.toFixed(2)}, max usage: ${maxGalaUsage.toFixed(2)})`, 'info');
+                if (isGalaToken) {
+                    // For GALA buy orders, limit based on available GALA
+                    const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+                    safePositionSize = Math.min(safePositionSize, availableGala);
+                    
+                    // Additional safety: never spend more than 90% of available GALA
+                    const maxGalaUsage = availableGala * (MAX_TOKEN_USAGE_PERCENT / 100);
+                    safePositionSize = Math.min(safePositionSize, maxGalaUsage);
+                    
+                    logMessage(`🛡️ SAFETY: GALA buy position limited to ${safePositionSize.toFixed(2)} GALA (available: ${availableGala.toFixed(2)}, max usage: ${maxGalaUsage.toFixed(2)})`, 'info');
+                } else {
+                    // For non-GALA buy orders, limit based on token balance and price
+                    const tokenPrice = tokenPrices[token] || 0;
+                    if (tokenPrice === 0) {
+                        logMessage(`⚠️ No price data for ${getTokenSymbol(token)}, cannot calculate safe buy amount`, 'warning');
+                        return 0;
+                    }
+                    
+                    // Calculate how much we can buy (90% of token balance)
+                    const maxTokenUsage = tokenBalance * (MAX_TOKEN_USAGE_PERCENT / 100);
+                    const maxGalaValue = maxTokenUsage * tokenPrice;
+                    
+                    // Limit position size to the smaller of: calculated size or max token usage
+                    safePositionSize = Math.min(safePositionSize, maxGalaValue);
+                    
+                    logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} buy position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                }
                 
             } else if (action === 'sell') {
-                // For sell orders, limit based on token balance
+                // For sell orders, limit based on token balance (works for both GALA and non-GALA)
                 const tokenPrice = tokenPrices[token] || 0;
                 if (tokenPrice === 0) {
                     logMessage(`⚠️ No price data for ${getTokenSymbol(token)}, cannot calculate safe sell amount`, 'warning');
@@ -5143,7 +5179,7 @@
                 // Limit position size to the smaller of: calculated size or max token usage
                 safePositionSize = Math.min(safePositionSize, maxGalaValue);
                 
-                logMessage(`🛡️ SAFETY: Sell position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
+                logMessage(`🛡️ SAFETY: ${getTokenSymbol(token)} sell position limited to ${safePositionSize.toFixed(2)} GALA value (token balance: ${tokenBalance.toFixed(4)}, max usage: ${maxTokenUsage.toFixed(4)})`, 'info');
             }
             
             // Final safety check: ensure position size is reasonable
@@ -6877,7 +6913,7 @@
                 const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
                 const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
                 
-                if (availableGala > MIN_GALA_FOR_TRADE) {
+                if (availableGala > MIN_GALA_FOR_GALA_TRADES) {
                     // Use safe position sizing for acquisition
                     const acquisitionAmount = calculateSafePositionSize(triangle.tokenA, 'buy', 10); // Base 10 GALA for acquisition
                     
