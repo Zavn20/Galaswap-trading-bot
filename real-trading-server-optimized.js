@@ -15,7 +15,7 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 
 // Caching system - OPTIMIZED FOR 30-SECOND FRESHNESS REQUIREMENT
-const priceCache = new NodeCache({ stdTTL: 25 }); // 25 second cache for prices (5s buffer for freshness)
+const priceCache = new NodeCache({ stdTTL: 10 }); // 10 second cache for prices (20s buffer for freshness)
 const balanceCache = new NodeCache({ stdTTL: 15 }); // 15 second cache for balances (5s buffer)
 const quoteCache = new NodeCache({ stdTTL: 10 }); // 10 second cache for quotes
 
@@ -219,7 +219,7 @@ app.get('/api/health', (req, res) => {
             lastSDKError: healthMetrics.lastSDKError
         },
         cache: {
-            priceTTL: 25, // seconds - optimized for 30s freshness
+            priceTTL: 10, // seconds - optimized for 30s freshness (20s buffer)
             balanceTTL: 15, // seconds
             quoteTTL: 10 // seconds
         },
