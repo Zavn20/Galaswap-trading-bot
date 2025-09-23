@@ -570,9 +570,17 @@ app.post('/api/balance', async (req, res) => {
         }
 
         console.log(`💳 Balance request for: ${walletAddress}`);
-        console.log(`🔍 Fetching balances using SDK getUserAssets with address: ${walletAddress}`);
+        
+        // Ensure address has proper format for SDK
+        let formattedAddress = walletAddress;
+        if (!walletAddress.startsWith('eth|')) {
+            formattedAddress = `eth|${walletAddress}`;
+            console.log(`🔧 Formatted address: ${formattedAddress}`);
+        }
+        
+        console.log(`🔍 Fetching balances using SDK getUserAssets with address: ${formattedAddress}`);
 
-        const assets = await gswap.assets.getUserAssets(walletAddress);
+        const assets = await gswap.assets.getUserAssets(formattedAddress);
         console.log(`🔍 SDK returned: ${typeof assets} ${assets ? 'true' : 'false'}`);
 
         if (assets && assets.tokens && Array.isArray(assets.tokens)) {

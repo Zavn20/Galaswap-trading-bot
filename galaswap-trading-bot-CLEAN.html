@@ -6,10 +6,11 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>GalaSwap Trading Bot v9.1.9 - Live Market Data</title>
-    <!-- Version: 9.1.9 - Live Market Data Implementation -->
-    <meta name="version" content="9.1.9-button-fix-working-2024">
-    <meta name="build" content="20241221-001">
+    <meta http-equiv="Last-Modified" content="Mon, 23 Dec 2024 08:00:00 GMT">
+    <title>GalaSwap Trading Bot v9.1.9 - Price Freshness Fixed</title>
+    <!-- Version: 9.1.9 - Price Freshness Bug Fixed -->
+    <meta name="version" content="9.1.9-price-freshness-fixed-2024">
+    <meta name="build" content="20241221-002-price-freshness-fixed">
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://unpkg.com/elliptic@6.5.4/dist/elliptic.min.js"></script>
@@ -3817,26 +3818,36 @@
             static async connectEventSocket(bundlerBaseUrl = 'https://dex-backend-prod1.defi.gala.com') {
                 try {
                     const wsUrl = bundlerBaseUrl.replace('https://', 'wss://') + '/ws';
+                    console.log(`🔌 Attempting WebSocket connection to: ${wsUrl}`);
                     Events.eventSocket = new WebSocket(wsUrl);
                     
                     return new Promise((resolve, reject) => {
                         const timeout = setTimeout(() => {
-                            reject(new Error('WebSocket connection timeout'));
+                            console.warn('⚠️ WebSocket connection timeout (non-critical)');
+                            resolve(Events); // Don't reject, just resolve silently
                         }, 5000);
                         
                         Events.eventSocket.onopen = () => {
                             clearTimeout(timeout);
                             Events.eventSocketConnected = true;
+                            console.log('✅ WebSocket connected successfully');
                             resolve(Events);
                         };
                         
                         Events.eventSocket.onerror = (error) => {
                             clearTimeout(timeout);
-                            reject(error);
+                            console.warn('⚠️ WebSocket connection error (non-critical):', error);
+                            resolve(Events); // Don't reject, just resolve silently
+                        };
+                        
+                        Events.eventSocket.onclose = (event) => {
+                            Events.eventSocketConnected = false;
+                            console.log(`🔌 WebSocket closed: ${event.code} - ${event.reason}`);
                         };
                     });
                 } catch (error) {
-                    throw new GSwapSDKError(`Event socket connection failed: ${error.message}`, 'SOCKET_ERROR');
+                    console.warn('⚠️ WebSocket connection failed (non-critical):', error);
+                    return Events; // Don't throw error, just return
                 }
             }
 
@@ -5787,6 +5798,9 @@
                     const freshnessTime = new Date(lastPriceUpdateTime).toLocaleTimeString();
                     logMessage(`⏰ Price data timestamp: ${freshnessTime} (FRESH)`, 'info');
                     
+                    // Update status display to show fresh price data
+                    updateStatus();
+                    
                     if (successCount === 0) {
                         logMessage(`❌ NO REAL-TIME PRICES AVAILABLE: All ${KNOWN_TOKENS.length} tokens failed to load`, 'error');
                         logMessage(`🚫 TRADING BLOCKED: Cannot trade without real-time price data`, 'error');
@@ -5836,6 +5850,9 @@
                     } catch (error) {
                         console.error(`❌ Error recalculating portfolio:`, error);
                     }
+                    
+                    // Final status update to ensure Price Freshness is displayed correctly
+                    updateStatus();
                 } else {
                     throw new Error(`Invalid response format: status=${data.status}, data=${JSON.stringify(data.data).substring(0, 100)}`);
                 }
@@ -5850,6 +5867,7 @@
                 
                 updateTokenDisplay();
                 updateBalanceDisplay();
+                updateStatus(); // Update status to show price loading failed
             }
         }
 
@@ -6642,11 +6660,11 @@
                 return;
             }
             
-            // Update prices first (with caching for ultra-fast scanning)
-            if (!window.lastPriceUpdate || Date.now() - window.lastPriceUpdate > 10000) { // Update prices every 10 seconds max
+        // Update prices first (with caching for ultra-fast scanning)
+        if (!window.lastPriceUpdate || Date.now() - window.lastPriceUpdate > 30000) { // Update prices every 30 seconds max
             loadTokenPrices();
-                window.lastPriceUpdate = Date.now();
-            }
+            window.lastPriceUpdate = Date.now();
+        }
             
             // Real trading analysis - no test mode
             logMessage('🔍 Scanning for real trading opportunities...', 'info');
