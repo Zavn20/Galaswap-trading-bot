@@ -19,6 +19,12 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **🔒 Trade Cap**: Small testing trades (5-25 GALA)
 - **🏆 Competition**: High-frequency trading for all tokens
 
+### 📊 **Advanced Analytics**
+- **📈 Market Analysis**: Real-time triangle arbitrage opportunities
+- **🎯 Trading Signals**: Dynamic RSI, MACD, Bollinger Bands analysis
+- **📊 Trade Statistics**: Historical performance tracking with localStorage
+- **⚡ Performance & Risk**: Mode-specific metrics that update dynamically
+
 ### 💾 **Persistent Storage**
 - **Trading Statistics**: Total trades, P&L, win rate, best/worst trades
 - **Portfolio Tracking**: Real-time portfolio value and balances
@@ -30,6 +36,25 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **Stablecoin Support**: GUSDC pegged to $1.00 USD
 - **Dynamic Pricing**: Real-time GALA/USD conversion
 - **Fallback System**: Robust pricing for unavailable pairs
+
+## 🆕 Latest Updates (v9.1.9)
+
+### ✨ **Major UI Improvements**
+- **📈 Market Analysis**: Now displays real triangle arbitrage opportunities instead of static data
+- **🎯 Trading Signals**: Dynamic technical analysis with RSI, MACD, and Bollinger Bands for all tokens
+- **📊 Trade Statistics**: Fixed localStorage integration to properly display historical trading data
+- **⚡ Performance & Risk**: Dynamic metrics that update automatically when switching trading modes
+
+### 🔧 **Technical Enhancements**
+- **Enhanced Server API**: Added POST endpoints for prices and balances
+- **Improved Error Handling**: Better debugging and error recovery
+- **Real-time Data Integration**: Portfolio calculations now use live price data
+- **Mode-specific Configurations**: Risk metrics adapt to Conservative/Trade Cap/Competition modes
+
+### 📚 **Documentation**
+- Added comprehensive documentation for all improvements
+- Detailed implementation guides for new features
+- Enhanced troubleshooting and setup instructions
 
 ## 📸 Screenshot
 
