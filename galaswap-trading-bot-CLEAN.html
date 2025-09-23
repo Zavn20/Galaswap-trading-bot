@@ -7,9 +7,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta http-equiv="Last-Modified" content="Mon, 23 Dec 2024 08:00:00 GMT">
-    <title>GalaSwap Trading Bot v9.1.12 - Price Freshness FIXED</title>
-    <!-- Version: 9.1.12 - Price Freshness FIXED -->
-    <meta name="version" content="9.1.12-price-freshness-fixed-2024">
+    <title>GalaSwap Trading Bot v9.1.13 - Price Freshness FINALLY FIXED</title>
+    <!-- Version: 9.1.13 - Price Freshness FINALLY FIXED -->
+    <meta name="version" content="9.1.13-price-freshness-finally-fixed-2024">
     <meta name="build" content="20241221-002-price-freshness-fixed">
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -8077,7 +8077,61 @@
             // Update swap statistics
             updateSwapStats();
             
-            // Price freshness, safety reserve, and competition stats are now handled in updateStatus()
+            // Update price freshness status - CRITICAL FOR SAFETY
+            console.log(`🔍 About to update price freshness status`);
+            const priceFreshnessElement = document.getElementById('priceFreshness');
+            console.log(`🔍 priceFreshnessElement found:`, !!priceFreshnessElement);
+            if (priceFreshnessElement) {
+                console.log(`🔍 Calling getPriceFreshnessStatus()`);
+                const freshnessStatus = getPriceFreshnessStatus();
+                console.log(`🔍 Price freshness debug: lastPriceUpdateTime=${lastPriceUpdateTime}, freshnessStatus=`, freshnessStatus);
+                priceFreshnessElement.textContent = freshnessStatus.age;
+                
+                // Color code based on freshness
+                if (freshnessStatus.fresh) {
+                    priceFreshnessElement.style.color = '#4caf50'; // Green for fresh
+                } else {
+                    priceFreshnessElement.style.color = '#f44336'; // Red for stale
+                }
+            }
+            
+            // Update safety reserve status
+            const safetyReserveElement = document.getElementById('safetyReserve');
+            if (safetyReserveElement) {
+                const galaBalance = tokenBalances['GALA|Unit|none|none'] || 0;
+                const availableGala = Math.max(0, galaBalance - RESERVE_GALA_FOR_FEES);
+                
+                if (galaBalance >= RESERVE_GALA_FOR_FEES) {
+                    safetyReserveElement.textContent = `${RESERVE_GALA_FOR_FEES} GALA`;
+                    safetyReserveElement.style.color = '#4caf50'; // Green for sufficient reserve
+                } else {
+                    safetyReserveElement.textContent = `${galaBalance.toFixed(0)}/${RESERVE_GALA_FOR_FEES}`;
+                    safetyReserveElement.style.color = '#f44336'; // Red for insufficient reserve
+                }
+            }
+            
+            // Update competition stats (only show in competition mode)
+            const competitionStatsElement = document.getElementById('competitionStats');
+            const triangleSuccessElement = document.getElementById('triangleSuccess');
+            if (competitionStatsElement && triangleSuccessElement) {
+                if (tradingMode === 'competition') {
+                    competitionStatsElement.style.display = 'block';
+                    const successRate = competitionTriangleStats.totalTriangles > 0 ? 
+                        (competitionTriangleStats.successfulTriangles / competitionTriangleStats.totalTriangles * 100).toFixed(1) : 0;
+                    triangleSuccessElement.textContent = `${competitionTriangleStats.successfulTriangles}/${competitionTriangleStats.totalTriangles}`;
+                    
+                    // Color code based on success rate
+                    if (successRate >= 70) {
+                        triangleSuccessElement.style.color = '#4caf50'; // Green for high success
+                    } else if (successRate >= 50) {
+                        triangleSuccessElement.style.color = '#ff9800'; // Orange for medium success
+                    } else {
+                        triangleSuccessElement.style.color = '#f44336'; // Red for low success
+                    }
+                } else {
+                    competitionStatsElement.style.display = 'none';
+                }
+            }
         }
 
         // Initialize status display
