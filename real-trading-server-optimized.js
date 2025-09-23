@@ -14,15 +14,15 @@ app.use(helmet()); // Security headers
 app.use(cors());
 app.use(express.json({ limit: '10mb' })); // Limit JSON payload size
 
-// Caching system
-const priceCache = new NodeCache({ stdTTL: 30 }); // 30 second cache for prices
-const balanceCache = new NodeCache({ stdTTL: 10 }); // 10 second cache for balances
-const quoteCache = new NodeCache({ stdTTL: 5 }); // 5 second cache for quotes
+// Caching system - OPTIMIZED FOR 30-SECOND FRESHNESS REQUIREMENT
+const priceCache = new NodeCache({ stdTTL: 25 }); // 25 second cache for prices (5s buffer for freshness)
+const balanceCache = new NodeCache({ stdTTL: 15 }); // 15 second cache for balances (5s buffer)
+const quoteCache = new NodeCache({ stdTTL: 10 }); // 10 second cache for quotes
 
-// Rate limiting
+// Rate limiting - INCREASED FOR 30-SECOND FRESHNESS REQUIREMENT
 const rateLimiter = new Map();
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 100;
+const MAX_REQUESTS_PER_WINDOW = 200; // Increased from 100 to accommodate more frequent calls
 
 // Global variables
 let gswap = null;
@@ -36,7 +36,10 @@ const healthMetrics = {
     errors: 0,
     startTime: Date.now(),
     cacheHits: 0,
-    cacheMisses: 0
+    cacheMisses: 0,
+    sdkRateLimitHits: 0,
+    sdkErrors: 0,
+    lastSDKError: null
 };
 
 // Rate limiting function
@@ -144,6 +147,21 @@ async function getOptimizedPrices() {
             }
         } catch (error) {
             console.log(`❌ Price fetch failed for ${token}:`, error.message);
+            
+            // Track SDK errors for monitoring
+            healthMetrics.sdkErrors++;
+            healthMetrics.lastSDKError = {
+                token: token,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Check for rate limiting errors
+            if (error.message && error.message.includes('rate limit')) {
+                healthMetrics.sdkRateLimitHits++;
+                console.log(`⚠️ SDK Rate limit hit for ${token}`);
+            }
+            
             return index === 0 ? 0.0176 : 1; // Fallback
         }
     });
@@ -195,7 +213,19 @@ app.get('/api/health', (req, res) => {
                 balanceCache: balanceCache.getStats(),
                 quoteCache: quoteCache.getStats(),
                 cacheHitRate: healthMetrics.cacheHits / (healthMetrics.cacheHits + healthMetrics.cacheMisses) * 100
-            }
+            },
+            sdkRateLimitHits: healthMetrics.sdkRateLimitHits,
+            sdkErrors: healthMetrics.sdkErrors,
+            lastSDKError: healthMetrics.lastSDKError
+        },
+        cache: {
+            priceTTL: 25, // seconds - optimized for 30s freshness
+            balanceTTL: 15, // seconds
+            quoteTTL: 10 // seconds
+        },
+        rateLimits: {
+            maxRequestsPerMinute: MAX_REQUESTS_PER_WINDOW,
+            windowSize: RATE_LIMIT_WINDOW / 1000 // seconds
         }
     });
 });
