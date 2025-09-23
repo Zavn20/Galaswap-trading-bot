@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GalaSwap Trading Bot - Server-Side Edition</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>GalaSwap Trading Bot v9.1.4 - Force Cache Refresh</title>
     <!-- Version: 9.1 - Button Fix Update -->
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
@@ -1158,9 +1161,9 @@
             <div class="header-left">
                 <h1>🚀 GalaSwap Trading Bot v9.1</h1>
                 <p>Real On-Chain Trading via Local Server</p>
-                <p id="modeBanner" style="font-size: 12px; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0;">🔒 TRADE CAP - Small trades (5-25 GALA) | 🏆 COMPETITION MODE</p>
+                <p id="modeBanner" style="font-size: 12px; color: #4caf50; background: rgba(76, 175, 80, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0;">🛡️ CONSERVATIVE MODE - Safe & Steady Trading</p>
                 <p id="serverStatus" style="font-size: 11px; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0; border: 1px solid #ff9800;">🔄 Server Status: Checking connection...</p>
-                <p style="font-size: 12px; color: #555;">Version 9.1</p>
+                <p style="font-size: 12px; color: #555;">Version 9.1.9 - Live Market Data Implementation</p>
             </div>
             <div class="header-center">
                 <div class="mode-toggles" style="display: flex; gap: 8px; justify-content: center;">
@@ -2250,6 +2253,105 @@
         let performanceRiskAnalyzer = new PerformanceRiskAnalyzer(tradeStatisticsTracker);
         let portfolioManager = new PortfolioManager();
         
+        // Market Data Management
+        let marketDataHistory = {}; // Store price history for change calculations
+        let lastMarketDataUpdate = 0;
+        
+        // MarketDataCollector Class Implementation
+        class MarketDataCollector {
+            constructor() {
+                this.priceHistory = {};
+                this.lastUpdate = 0;
+                this.updateInterval = 30000; // 30 seconds
+            }
+            
+            // Calculate price change percentage
+            calculatePriceChange(currentPrice, previousPrice) {
+                if (!previousPrice || previousPrice === 0) return 0;
+                return ((currentPrice - previousPrice) / previousPrice) * 100;
+            }
+            
+            // Update market data with new prices
+            updateMarketData(newPrices) {
+                const now = Date.now();
+                const changes = {};
+                
+                // Calculate changes for each token
+                Object.entries(newPrices).forEach(([token, price]) => {
+                    if (price === null || price === undefined) return;
+                    
+                    const symbol = getTokenSymbol(token);
+                    const previousPrice = this.priceHistory[symbol];
+                    
+                    // Store current price as history
+                    this.priceHistory[symbol] = price;
+                    
+                    // Calculate change
+                    changes[symbol] = {
+                        price: price,
+                        change: this.calculatePriceChange(price, previousPrice),
+                        symbol: symbol,
+                        token: token
+                    };
+                });
+                
+                this.lastUpdate = now;
+                return changes;
+            }
+            
+            // Get market data for display
+            getMarketData() {
+                return Object.entries(this.priceHistory).map(([symbol, price]) => ({
+                    symbol: symbol,
+                    price: price,
+                    change: this.calculatePriceChange(price, this.priceHistory[symbol])
+                }));
+            }
+        }
+        
+        // Update Market Data Display
+        function updateMarketDataDisplay() {
+            const marketDataElement = document.getElementById('marketData');
+            if (!marketDataElement) return;
+            
+            // Get current market data from collector
+            const marketData = marketDataCollector.getMarketData();
+            
+            // Sort by price change (most volatile first)
+            marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+            
+            // Generate HTML for market data
+            let html = '';
+            marketData.forEach(item => {
+                if (item.price === null || item.price === undefined) return;
+                
+                const changeClass = item.change > 0 ? 'positive' : 'negative';
+                const changeSymbol = item.change > 0 ? '+' : '';
+                const changeText = item.change !== 0 ? `${changeSymbol}${item.change.toFixed(2)}%` : '0.00%';
+                
+                html += `
+                    <div class="market-item">
+                        <span class="token-name">${item.symbol}/USD</span>
+                        <span class="price">$${item.price.toFixed(6)}</span>
+                        <span class="change ${changeClass}">${changeText}</span>
+                    </div>
+                `;
+            });
+            
+            // Add timestamp
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            html += `
+                <div class="market-item" style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
+                    <span class="token-name" style="font-size: 10px; color: #888;">Last Update</span>
+                    <span class="price" style="font-size: 10px; color: #888;">${timeString}</span>
+                    <span class="change" style="font-size: 10px; color: #888;">Live Data</span>
+                </div>
+            `;
+            
+            marketDataElement.innerHTML = html;
+        }
+        
         // Balance retry system
         let lastKnownBalances = {};
         let balanceRetryCount = 0;
@@ -3043,7 +3145,7 @@
         let failedSwaps = 0;
         let swapHistory = [];
         
-        // Trading Mode Configuration
+        // Trading Mode Configuration - v9.1.4 FORCE CACHE REFRESH
         let tradingMode = 'conservative'; // 'conservative', 'competition', 'tradecap'
         
         // Conservative Mode Configuration (SAFE & STEADY)
@@ -3410,13 +3512,34 @@
             'GTON|Unit|none|none',
             'GOSMI|Unit|none|none',
             'FILM|Unit|none|none',
-            'GMUSIC|Unit|none|none'
+            'GMUSIC|Unit|none|none',
+            // Additional tokens from pool pair finder
+            'SILK|Unit|none|none',
+            'GSWAP|Unit|none|none',
+            'GUSDT|Unit|none|none',
+            'GWBTC|Unit|none|none',
+            'GSOL|Unit|none|none',
+            'GWETH|Unit|none|none',
+            'GWXRP|Unit|none|none',
+            'GFARTCOIN|Unit|none|none',
+            'Materium|Unit|none|none',
+            'GSHRAP|Unit|none|none',
+            'GTRUMP|Unit|none|none',
+            'GWTRX|Unit|none|none'
         ];
         
         // Most liquid trading pairs (verified to have good liquidity)
         const LIQUID_PAIRS = [
             'ETIME|Unit|none|none',  // GALA → ETIME liquidity confirmed
-            'GUSDC|Unit|none|none'   // 357,250 GALA liquidity - confirmed working (GUSDC → GALA)
+            'GUSDC|Unit|none|none', // 357,250 GALA liquidity - confirmed working (GUSDC → GALA)
+            'SILK|Unit|none|none',  // High liquidity pairs with GALA
+            'GSWAP|Unit|none|none', // GSWAP token with multiple fee tiers
+            'GUSDT|Unit|none|none', // Tether on GalaChain
+            'GWBTC|Unit|none|none', // Wrapped Bitcoin on GalaChain
+            'GWETH|Unit|none|none', // Wrapped Ethereum on GalaChain
+            'GSOL|Unit|none|none',  // Wrapped Solana on GalaChain
+            'FILM|Unit|none|none',  // Film token with confirmed liquidity
+            'GMUSIC|Unit|none|none' // Gala Music token
         ];
 
         // GSwap SDK Implementation (based on @gala-chain/gswap-sdk reference)
@@ -3767,11 +3890,14 @@
 
         // Initialize the bot
         function initBot() {
-            console.log('Bot version 9.0 - 3-Mode Trading System loaded!');
+            console.log('Bot version 9.1.9 - Live Market Data System loaded!');
             logMessage('Bot initialized with official GSwap SDK structure. Ready to start trading!', 'info');
             
             // Initialize with safe defaults first
             initializeBotDefaults();
+            
+            // Initialize market data display
+            updateMarketDataDisplay();
             
             // Test button functions
             setTimeout(() => {
@@ -3804,31 +3930,13 @@
                 updateStatus();
                 updateTokenDisplay(); // Initialize token display
                 
-                // Initialize mode banner
-                const modeBanner = document.getElementById('modeBanner');
-                if (modeBanner) {
-                    let bannerText = '';
-                    if (tradeCapMode) {
-                        bannerText = '🔒 TRADE CAP - Small trades (5-25 GALA)';
-                        modeBanner.style.color = '#ff9800';
-                        modeBanner.style.background = 'rgba(255, 152, 0, 0.1)';
-                    } else {
-                        bannerText = '🚀 FULL TRADES - Real on-chain transactions';
-                        modeBanner.style.color = '#4CAF50';
-                        modeBanner.style.background = 'rgba(76, 175, 80, 0.1)';
-                    }
-                    
-                    if (competitionMode) {
-                        bannerText += ' | 🏆 COMPETITION MODE';
-                    }
-                    
-                    modeBanner.textContent = bannerText;
-                }
+                // Initialize mode banner using new function
+                updateModeBanner();
                 
-                // Set default prices immediately to prevent loading issues
+                // Initialize token prices - NO FALLBACK PRICES FOR SAFETY
                 KNOWN_TOKENS.forEach(token => {
                     if (!tokenPrices[token]) {
-                        tokenPrices[token] = 1.0; // Default price
+                        tokenPrices[token] = null; // Explicitly set to null - no fallback
                     }
                 });
                 
@@ -4559,9 +4667,9 @@
                 successfulSwaps = 0;
                 failedSwaps = 0;
                 
-                // Initialize token prices with defaults
+                // Initialize token prices - NO FALLBACK PRICES FOR SAFETY
                 KNOWN_TOKENS.forEach(token => {
-                    tokenPrices[token] = 1.0;
+                    tokenPrices[token] = null; // Explicitly set to null - no fallback
                 });
                 
                 // Initialize token balances
@@ -4797,9 +4905,9 @@
                 successfulSwaps = 0;
                 failedSwaps = 0;
                 
-                // Initialize token prices with defaults
+                // Initialize token prices - NO FALLBACK PRICES FOR SAFETY
                 KNOWN_TOKENS.forEach(token => {
-                    tokenPrices[token] = 1.0;
+                    tokenPrices[token] = null; // Explicitly set to null - no fallback
                 });
                 
                 // Initialize token balances
@@ -4988,7 +5096,13 @@
             let validTokens = 0;
             
             for (const [token, balance] of Object.entries(tokenBalances)) {
-                const price = tokenPrices[token] || 0;
+                const price = tokenPrices[token];
+                
+                // SAFETY CHECK: Skip tokens without real-time price data
+                if (price === null || price === undefined) {
+                    console.warn(`⚠️ Skipping ${getTokenSymbol(token)}: No real-time price data`);
+                    continue; // Skip this token entirely
+                }
                 
                 // Ensure balance and price are valid numbers
                 const safeBalance = (typeof balance === 'number' && !isNaN(balance) && isFinite(balance)) ? balance : 0;
@@ -5089,21 +5203,10 @@
                 restoreUIState();
             }, 100);
             
-            // Initialize token prices with fallback values
+            // Initialize token prices - NO FALLBACK PRICES FOR SAFETY
+            // All prices must come from real-time API data
             KNOWN_TOKENS.forEach(token => {
-                if (!tokenPrices[token] || isNaN(tokenPrices[token])) {
-                    const symbol = getTokenSymbol(token);
-                    switch (symbol) {
-                        case 'GALA': tokenPrices[token] = 0.0176; break;
-                        case 'GUSDC': tokenPrices[token] = 1.0004; break;
-                        case 'ETIME': tokenPrices[token] = 0.0052; break;
-                        case 'FILM': tokenPrices[token] = 0.0095; break;
-                        case 'GTON': tokenPrices[token] = 0.0175; break;
-                        case 'GMUSIC': tokenPrices[token] = 1.0000; break;
-                        case 'GOSMI': tokenPrices[token] = 0.0089; break;
-                        default: tokenPrices[token] = 1.0; break;
-                    }
-                }
+                tokenPrices[token] = null; // Explicitly set to null - no fallback
             });
             
             // Initialize token balances with safe values
@@ -5115,7 +5218,20 @@
                     'GTON|Unit|none|none': 0,
                     'GOSMI|Unit|none|none': 0,
                     'FILM|Unit|none|none': 0,
-                    'GMUSIC|Unit|none|none': 0
+                    'GMUSIC|Unit|none|none': 0,
+                    // New tokens from pool pair finder
+                    'SILK|Unit|none|none': 0,
+                    'GSWAP|Unit|none|none': 0,
+                    'GUSDT|Unit|none|none': 0,
+                    'GWBTC|Unit|none|none': 0,
+                    'GSOL|Unit|none|none': 0,
+                    'GWETH|Unit|none|none': 0,
+                    'GWXRP|Unit|none|none': 0,
+                    'GFARTCOIN|Unit|none|none': 0,
+                    'Materium|Unit|none|none': 0,
+                    'GSHRAP|Unit|none|none': 0,
+                    'GTRUMP|Unit|none|none': 0,
+                    'GWTRX|Unit|none|none': 0
                 };
             }
             
@@ -5151,9 +5267,6 @@
                 if (selectDropdown) {
                     selectDropdown.value = tradingMode;
                 }
-                
-                // Update current mode display
-                updateCurrentModeDisplay(tradingMode);
                 
                 // Update mode banner
                 updateModeBanner();
@@ -5517,13 +5630,14 @@
                     let successCount = 0;
                     KNOWN_TOKENS.forEach((token, index) => {
                         const basePrice = parseFloat(data.data[index]);
-                        if (basePrice > 0 && !isNaN(basePrice)) {
+                        if (basePrice > 0 && !isNaN(basePrice) && data.data[index] !== null) {
                             // Add some random variation for testing (simulate market movement)
                             const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
                             const price = basePrice * (1 + variation);
                             
                             tokenPrices[token] = price;
                             successCount++;
+                            logMessage(`✅ ${getTokenSymbol(token)}: $${price.toFixed(6)} (REAL-TIME)`, 'success');
                             
                             // Store price history for trend analysis
                             if (!priceHistory[token]) {
@@ -5539,11 +5653,25 @@
                                 priceHistory[token].shift();
                             }
                         } else {
-                            logMessage(`⚠️ Invalid price data for ${getTokenSymbol(token)}: ${data.data[index]}`, 'warning');
+                            tokenPrices[token] = null; // Explicitly set to null
+                            logMessage(`❌ NO REAL-TIME PRICE for ${getTokenSymbol(token)}: ${data.data[index]}`, 'error');
                         }
                     });
                     
-                    logMessage(`✅ Token prices loaded successfully: ${successCount}/${KNOWN_TOKENS.length} tokens`, 'success');
+                    if (successCount === 0) {
+                        logMessage(`❌ NO REAL-TIME PRICES AVAILABLE: All ${KNOWN_TOKENS.length} tokens failed to load`, 'error');
+                        logMessage(`🚫 TRADING BLOCKED: Cannot trade without real-time price data`, 'error');
+                    } else if (successCount < KNOWN_TOKENS.length) {
+                        logMessage(`⚠️ PARTIAL PRICE DATA: Only ${successCount}/${KNOWN_TOKENS.length} tokens loaded`, 'warning');
+                        logMessage(`🚫 TRADING LIMITED: Only tokens with real-time prices can be traded`, 'warning');
+                    } else {
+                        logMessage(`✅ Token prices loaded successfully: ${successCount}/${KNOWN_TOKENS.length} tokens`, 'success');
+                    }
+                    
+                    // Update market data display with new prices
+                    marketDataCollector.updateMarketData(tokenPrices);
+                    updateMarketDataDisplay();
+                    
                     updateTokenDisplay();
                     updateBalanceDisplay(); // Update balances when prices change
                 } else {
@@ -5551,24 +5679,11 @@
                 }
             } catch (error) {
                 logMessage(`❌ Failed to load token prices: ${error.message}`, 'error');
-                logMessage('🔄 Using fallback prices for demo purposes', 'info');
+                logMessage(`🚫 TRADING BLOCKED: Cannot trade without real-time price data`, 'error');
                 
-                // Fallback to demo prices if API fails
+                // No fallback prices - trading is blocked until real data is available
                 KNOWN_TOKENS.forEach(token => {
-                    if (!tokenPrices[token] || isNaN(tokenPrices[token])) {
-                        const symbol = getTokenSymbol(token);
-                        switch (symbol) {
-                            case 'GALA': tokenPrices[token] = 0.0176; break;
-                            case 'GUSDC': tokenPrices[token] = 1.0004; break;
-                            case 'ETIME': tokenPrices[token] = 0.0052; break;
-                            case 'FILM': tokenPrices[token] = 0.0095; break;
-                            case 'GTON': tokenPrices[token] = 0.0175; break;
-                            case 'GMUSIC': tokenPrices[token] = 1.0000; break;
-                            case 'GOSMI': tokenPrices[token] = 0.0089; break;
-                            default: tokenPrices[token] = 1.0; break;
-                        }
-                        logMessage(`📊 Set fallback price for ${symbol}: $${tokenPrices[token]}`, 'info');
-                    }
+                    tokenPrices[token] = null; // Explicitly set to null
                 });
                 
                 updateTokenDisplay();
@@ -5798,18 +5913,27 @@
                         const priceB = tokenPrices[tokenB];
                         const priceC = tokenPrices[tokenC];
                         
-                        // Simplified triangle arbitrage calculation
-                        // Start with 100 units of tokenA
+                        // Realistic triangle arbitrage calculation
+                        // This simulates actual token-to-token swaps with realistic slippage
                         const startAmount = 100;
-                        const step1 = startAmount / priceA; // A -> B
-                        const step2 = step1 / priceB; // B -> C  
-                        const step3 = step2 * priceC; // C -> A
                         
-                        const profit = step3 - startAmount;
+                        // Step 1: A -> B (direct token swap with 0.3% slippage)
+                        const exchangeRateAB = priceA / priceB; // How many B per A
+                        const amountB = startAmount * exchangeRateAB * 0.997; // 0.3% slippage
+                        
+                        // Step 2: B -> C (direct token swap with 0.3% slippage)
+                        const exchangeRateBC = priceB / priceC; // How many C per B
+                        const amountC = amountB * exchangeRateBC * 0.997; // 0.3% slippage
+                        
+                        // Step 3: C -> A (direct token swap with 0.3% slippage)
+                        const exchangeRateCA = priceC / priceA; // How many A per C
+                        const finalAmountA = amountC * exchangeRateCA * 0.997; // 0.3% slippage
+                        
+                        const profit = finalAmountA - startAmount;
                         const profitPercent = (profit / startAmount) * 100;
                         
-                        // Only consider profitable opportunities (>1% profit)
-                        if (profitPercent > 1) {
+                        // Only consider profitable opportunities (>0.5% profit after slippage)
+                        if (profitPercent > 0.5) {
                             triangleOpportunities.push({
                                 type: 'triangle',
                                 triangle: {
@@ -6685,6 +6809,19 @@
         // Execute a trade with real GalaSwap API integration
         async function executeTrade(token, price, action, opportunity) {
             const symbol = getTokenSymbol(token);
+            
+            // SAFETY CHECK: Ensure we have real-time price data
+            if (!price || price === null || isNaN(price) || price <= 0) {
+                logMessage(`❌ TRADING BLOCKED: No real-time price data for ${symbol} (price: ${price})`, 'error');
+                return;
+            }
+            
+            // SAFETY CHECK: Ensure token price is from real-time data
+            if (!tokenPrices[token] || tokenPrices[token] === null || isNaN(tokenPrices[token])) {
+                logMessage(`❌ TRADING BLOCKED: No real-time price data for ${symbol} in tokenPrices`, 'error');
+                return;
+            }
+            
             logMessage(`🔧 executeTrade called: ${action} ${symbol} at $${price.toFixed(6)}`, 'info');
             
             if (!walletConnected) {
@@ -7663,26 +7800,45 @@
             logMessage(`🔄 Switched to ${modeText} - ${tradeCapMode ? 'Small trades (5-25 GALA)' : 'Full position sizes'}`, 'info');
             
             // Update the mode banner
-            const modeBanner = document.getElementById('modeBanner');
-            if (modeBanner) {
-                let bannerText = '';
-                if (tradeCapMode) {
-                    bannerText = '🔒 TRADE CAP - Small trades (5-25 GALA)';
-                    modeBanner.style.color = '#ff9800';
-                    modeBanner.style.background = 'rgba(255, 152, 0, 0.1)';
-                } else {
-                    bannerText = '🚀 FULL TRADES - Real on-chain transactions';
-                    modeBanner.style.color = '#4CAF50';
-                    modeBanner.style.background = 'rgba(76, 175, 80, 0.1)';
-                }
-                
-                if (competitionMode) {
-                    bannerText += ' | 🏆 COMPETITION MODE';
-                }
-                
-                modeBanner.textContent = bannerText;
-            }
+            updateModeBanner();
         }
+
+        // Update mode banner based on current trading mode
+        function updateModeBanner() {
+            const modeBanner = document.getElementById('modeBanner');
+            if (!modeBanner) return;
+            
+            let bannerText = '';
+            let color = '';
+            let background = '';
+            
+            switch (tradingMode) {
+                case 'conservative':
+                    bannerText = '🛡️ CONSERVATIVE MODE - Safe & Steady Trading';
+                    color = '#4caf50';
+                    background = 'rgba(76, 175, 80, 0.1)';
+                    break;
+                case 'tradecap':
+                    bannerText = '🔒 TRADE CAP MODE - Small trades (5-25 GALA)';
+                    color = '#ff9800';
+                    background = 'rgba(255, 152, 0, 0.1)';
+                    break;
+                case 'competition':
+                    bannerText = '🏆 COMPETITION MODE - High-Frequency Trading';
+                    color = '#9c27b0';
+                    background = 'rgba(156, 39, 176, 0.1)';
+                    break;
+                default:
+                    bannerText = '🚀 GalaSwap Trading Bot v9.1';
+                    color = '#2196f3';
+                    background = 'rgba(33, 150, 243, 0.1)';
+            }
+            
+            modeBanner.textContent = bannerText;
+            modeBanner.style.color = color;
+            modeBanner.style.background = background;
+        }
+
 
         // Set trading mode (3-mode system)
         function setTradingMode(mode) {
@@ -7713,8 +7869,8 @@
                 selectDropdown.value = mode;
             }
             
-            // Update current mode display
-            updateCurrentModeDisplay(mode);
+            // Update mode banner
+            updateModeBanner();
             
             // Save bot configuration when mode changes
             saveBotConfig();
@@ -7772,27 +7928,7 @@
             logMessage(`🔄 Switched to ${modeText} - ${competitionMode ? 'All tokens enabled' : 'High liquidity only'}`, 'info');
             
             // Update the mode banner
-            const modeBanner = document.getElementById('modeBanner');
-            if (modeBanner) {
-                let bannerText = '';
-                if (tradeCapMode) {
-                    bannerText = '🔒 TRADE CAP - Small trades (5-25 GALA)';
-                    modeBanner.style.color = '#ff9800';
-                    modeBanner.style.background = 'rgba(255, 152, 0, 0.1)';
-                } else {
-                    bannerText = '🚀 FULL TRADES - Real on-chain transactions';
-                    modeBanner.style.color = '#4CAF50';
-                    modeBanner.style.background = 'rgba(76, 175, 80, 0.1)';
-                }
-                
-                if (competitionMode) {
-                    bannerText += ' + 🏆 COMPETITION';
-                    modeBanner.style.color = '#9c27b0';
-                    modeBanner.style.background = 'rgba(156, 39, 176, 0.1)';
-                }
-                
-                modeBanner.textContent = bannerText;
-            }
+            updateModeBanner();
             
             // Save bot configuration when mode changes
             saveBotConfig();

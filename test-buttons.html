@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Button Test - v1.0</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 20px; 
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #45a049; }
+        .log { 
+            background: #333; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-family: monospace; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Button Functionality Test</h1>
+    
+    <div>
+        <button onclick="testFunction1()">Test Button 1</button>
+        <button onclick="testFunction2()">Test Button 2</button>
+        <button onclick="testFunction3()">Test Button 3</button>
+    </div>
+    
+    <div id="log" class="log">
+        <div>Console output will appear here...</div>
+    </div>
+
+    <script>
+        // Simple logging function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${time}] ${message}</div>`;
+            console.log(message);
+        }
+
+        // Test functions
+        function testFunction1() {
+            log('✅ Test Function 1 executed successfully!');
+        }
+
+        function testFunction2() {
+            log('✅ Test Function 2 executed successfully!');
+        }
+
+        function testFunction3() {
+            log('✅ Test Function 3 executed successfully!');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 DOMContentLoaded event fired');
+            log('🔍 Testing if functions are accessible...');
+            
+            // Test function accessibility
+            const functions = ['testFunction1', 'testFunction2', 'testFunction3'];
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ Function ${funcName} is accessible`);
+                } else {
+                    log(`❌ Function ${funcName} is NOT accessible`);
+                }
+            });
+            
+            // Test button elements
+            const buttons = document.querySelectorAll('button');
+            log(`🔍 Found ${buttons.length} buttons on page`);
+            
+            buttons.forEach((button, index) => {
+                log(`Button ${index + 1}: ${button.textContent.trim()}`);
+            });
+            
+            log('✅ Initialization complete - buttons should work now!');
+        });
+
+        // Also try window.onload as backup
+        window.onload = function() {
+            log('🔄 Window.onload event fired (backup)');
+        };
+    </script>
+</body>
+</html>
+

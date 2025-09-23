@@ -35,15 +35,23 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **USD Conversion**: All prices displayed in USD
 - **Stablecoin Support**: GUSDC pegged to $1.00 USD
 - **Dynamic Pricing**: Real-time GALA/USD conversion
-- **Fallback System**: Robust pricing for unavailable pairs
+- **30-Second Freshness**: Price data must be less than 30 seconds old for trading
+- **No Fallback Pricing**: Maximum safety - no trades with stale or estimated prices
 
-## 🆕 Latest Updates (v9.1.9)
+## 🆕 Latest Updates (v9.2.0)
+
+### 🔒 **Critical Safety Enhancements**
+- **30-Second Price Freshness**: All trades require price data less than 30 seconds old
+- **No Fallback Pricing**: Eliminated dangerous estimated pricing for maximum safety
+- **Real-time Price Monitoring**: Visual indicator shows price data freshness with color coding
+- **Enhanced Trading Validation**: Multiple safety checks prevent trades with stale data
 
 ### ✨ **Major UI Improvements**
 - **📈 Market Analysis**: Now displays real triangle arbitrage opportunities instead of static data
 - **🎯 Trading Signals**: Dynamic technical analysis with RSI, MACD, and Bollinger Bands for all tokens
 - **📊 Trade Statistics**: Fixed localStorage integration to properly display historical trading data
 - **⚡ Performance & Risk**: Dynamic metrics that update automatically when switching trading modes
+- **⏰ Price Freshness Indicator**: Real-time status panel showing data age and freshness
 
 ### 🔧 **Technical Enhancements**
 - **Enhanced Server API**: Added POST endpoints for prices and balances
@@ -176,16 +184,24 @@ The bot tracks comprehensive metrics:
 
 ## 🔒 Security
 
-### Wallet Security
+### 🛡️ **Trading Safety**
+- **30-Second Price Freshness**: No trades with stale price data
+- **No Fallback Pricing**: Eliminates dangerous estimated pricing
+- **Real-time Validation**: Multiple checks before executing trades
+- **Visual Monitoring**: Price freshness indicator with color coding
+- **Automatic Blocking**: Bot refuses trades with outdated information
+
+### 🔐 **Wallet Security**
 - Private keys are handled securely
 - No keys are transmitted to external servers
 - Local storage encryption for sensitive data
 
-### Trading Security
+### ⚡ **Trading Security**
 - Slippage protection prevents excessive price impact
 - Input validation and sanitization
 - Rate limiting prevents excessive API calls
 - Comprehensive error handling
+- Price data freshness validation
 
 ## 🚨 Risk Disclaimer
 
@@ -196,6 +212,7 @@ The bot tracks comprehensive metrics:
 - Monitor your trades actively
 - Never invest more than you can afford to lose
 - Keep your private keys secure
+- **Note**: Bot automatically blocks trades with stale price data (>30 seconds old) for your safety
 
 ## 🤝 Contributing
 

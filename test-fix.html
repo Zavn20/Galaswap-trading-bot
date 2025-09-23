@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Button Fix Test</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 20px; 
+        }
+        button { 
+            background: #4caf50; 
+            color: white; 
+            border: none; 
+            padding: 10px 20px; 
+            margin: 10px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #45a049; }
+        .log { 
+            background: #333; 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-family: monospace; 
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Button Fix Test</h1>
+    
+    <div>
+        <button onclick="startBot()">🚀 Start Bot</button>
+        <button onclick="stopBot()">⏹️ Stop Bot</button>
+        <button onclick="connectWallet()">🔗 Connect Wallet</button>
+        <button onclick="refreshAllBalances()">💰 Refresh Balances</button>
+    </div>
+    
+    <div id="log" class="log">
+        <div>Console output will appear here...</div>
+    </div>
+
+    <script>
+        // MarketDataCollector Class Implementation - MUST BE FIRST
+        class MarketDataCollector {
+            constructor() {
+                this.priceHistory = {};
+                this.lastUpdate = 0;
+            }
+            
+            calculatePriceChange(currentPrice, previousPrice) {
+                if (!previousPrice || previousPrice === 0) return 0;
+                return ((currentPrice - previousPrice) / previousPrice) * 100;
+            }
+        }
+        
+        // Simple logging function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${time}] ${message}</div>`;
+            console.log(message);
+        }
+
+        // Test functions
+        function startBot() {
+            log('✅ Start Bot function executed successfully!');
+        }
+
+        function stopBot() {
+            log('✅ Stop Bot function executed successfully!');
+        }
+
+        function connectWallet() {
+            log('✅ Connect Wallet function executed successfully!');
+        }
+
+        function refreshAllBalances() {
+            log('✅ Refresh All Balances function executed successfully!');
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🚀 DOMContentLoaded event fired');
+            log('🔍 Testing if functions are accessible...');
+            
+            // Test function accessibility
+            const functions = ['startBot', 'stopBot', 'connectWallet', 'refreshAllBalances'];
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ Function ${funcName} is accessible`);
+                } else {
+                    log(`❌ Function ${funcName} is NOT accessible`);
+                }
+            });
+            
+            log('✅ Initialization complete - buttons should work now!');
+        });
+
+        // CRITICAL FIX: Ensure all functions are globally accessible for onclick handlers
+        window.startBot = startBot;
+        window.stopBot = stopBot;
+        window.connectWallet = connectWallet;
+        window.refreshAllBalances = refreshAllBalances;
+    </script>
+</body>
+</html>
+

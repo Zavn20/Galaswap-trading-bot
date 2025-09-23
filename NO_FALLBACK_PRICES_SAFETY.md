@@ -48,6 +48,21 @@
   }
   ```
 
+### 6. **30-Second Price Freshness Requirement** ⏰
+- **NEW**: Critical safety check ensures price data is less than 30 seconds old:
+  ```javascript
+  // CRITICAL SAFETY CHECK: Ensure price data is fresh (less than 30 seconds old)
+  if (!isPriceDataFresh()) {
+      const freshnessStatus = getPriceFreshnessStatus();
+      logMessage(`🚫 TRADING BLOCKED: Price data is ${freshnessStatus.age} old (max: 30s)`, 'error');
+      logMessage(`⚠️ REFRESH REQUIRED: Price data must be refreshed before trading`, 'warning');
+      return;
+  }
+  ```
+- **Impact**: Bot refuses to trade with stale price data, preventing dangerous trades based on outdated information
+- **Visual Indicator**: Price freshness status displayed in real-time in the status panel
+- **Color Coding**: Green for fresh data (< 30s), Red for stale data (> 30s)
+
 ## 📊 Price Loading Behavior
 
 ### **Success Scenarios:**
@@ -60,6 +75,9 @@
 - `🚫 TRADING BLOCKED: Cannot trade without real-time price data`
 - `⚠️ PARTIAL PRICE DATA: Only X/Y tokens loaded`
 - `🚫 TRADING LIMITED: Only tokens with real-time prices can be traded`
+- `🚫 TRADING BLOCKED: Price data is Xs old (max: 30s)`
+- `⚠️ REFRESH REQUIRED: Price data must be refreshed before trading`
+- `⚠️ PRICE DATA STALE: Xs old (max: 30s)`
 
 ## 🛡️ Trading Protection
 

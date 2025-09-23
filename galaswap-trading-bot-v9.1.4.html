@@ -6,10 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>GalaSwap Trading Bot v9.1.9 - Live Market Data</title>
-    <!-- Version: 9.1.9 - Live Market Data Implementation -->
-    <meta name="version" content="9.1.9-button-fix-working-2024">
-    <meta name="build" content="20241221-001">
+    <title>GalaSwap Trading Bot v9.1.4 - Force Cache Refresh</title>
+    <!-- Version: 9.1 - Button Fix Update -->
     <script src="https://unpkg.com/@gala-chain/api@latest/dist/index.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="https://unpkg.com/elliptic@6.5.4/dist/elliptic.min.js"></script>
@@ -1165,7 +1163,8 @@
                 <p>Real On-Chain Trading via Local Server</p>
                 <p id="modeBanner" style="font-size: 12px; color: #4caf50; background: rgba(76, 175, 80, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0;">🛡️ CONSERVATIVE MODE - Safe & Steady Trading</p>
                 <p id="serverStatus" style="font-size: 11px; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 5px; border-radius: 3px; margin: 5px 0; border: 1px solid #ff9800;">🔄 Server Status: Checking connection...</p>
-                <p style="font-size: 12px; color: #555;">Version 9.1.9 - Clean Button Fix</p>
+                <p style="font-size: 12px; color: #555;">Version 9.1.4 - Force Cache Refresh</p>
+                <button onclick="testModeSwitching()" style="font-size: 10px; padding: 2px 4px; margin: 2px 0; background: #2196f3; color: white; border: none; border-radius: 2px; cursor: pointer;">Test Mode Switch</button>
             </div>
             <div class="header-center">
                 <div class="mode-toggles" style="display: flex; gap: 8px; justify-content: center;">
@@ -1267,11 +1266,6 @@
                 <h3>⚡ Performance</h3>
                 <div class="value" id="performanceScore">A+</div>
                 <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Bot efficiency</div>
-            </div>
-            <div class="status-card">
-                <h3>⏰ Price Freshness</h3>
-                <div class="value" id="priceFreshness" style="color: #f44336;">Never</div>
-                <div style="font-size: 10px; color: #ccc; margin-top: 4px;">Data age</div>
             </div>
             <div class="status-card">
                 <h3>🔒 Security</h3>
@@ -1384,9 +1378,29 @@
                 <h3>📊 Market Analysis</h3>
                 <div class="token-list" id="tokenList">
                     <div class="token-item">
-                        <div class="token-name">🔍 Analyzing market opportunities...</div>
-                        <div class="token-price">Loading</div>
-                        <div class="token-change">-</div>
+                        <div class="token-name">🔺 ETIME → GOSMI → GUSDC → ETIME</div>
+                        <div class="token-price">+0.001%</div>
+                        <div class="token-change positive">Active</div>
+                    </div>
+                    <div class="token-item">
+                        <div class="token-name">🔺 GOSMI → ETIME → GUSDC → GOSMI</div>
+                        <div class="token-price">+0.001%</div>
+                        <div class="token-change positive">Active</div>
+                    </div>
+                    <div class="token-item">
+                        <div class="token-name">🔺 ETIME → GOSMI → GMUSIC → ETIME</div>
+                        <div class="token-price">+0.001%</div>
+                        <div class="token-change positive">Active</div>
+                    </div>
+                    <div class="token-item">
+                        <div class="token-name">🔺 GOSMI → ETIME → GMUSIC → GOSMI</div>
+                        <div class="token-price">+0.001%</div>
+                        <div class="token-change positive">Active</div>
+                    </div>
+                    <div class="token-item">
+                        <div class="token-name">🔺 ETIME → FILM → GUSDC → ETIME</div>
+                        <div class="token-price">+0.001%</div>
+                        <div class="token-change positive">Active</div>
                     </div>
                 </div>
             </div>
@@ -1488,35 +1502,35 @@
                 <div class="portfolio-summary" id="performanceMetrics" style="background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 6px; width: 100%; height: 100%; flex: 1; overflow-y: auto;">
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Scan Frequency:</span>
-                        <span class="summary-value" id="scanFrequency" style="color: #ffffff; font-weight: bold;">10s</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">10s</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Avg Response Time:</span>
-                        <span class="summary-value" id="avgResponseTime" style="color: #ffffff; font-weight: bold;">150ms</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">150ms</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">API Calls/min:</span>
-                        <span class="summary-value" id="apiCallsPerMin" style="color: #ffffff; font-weight: bold;">6</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">6</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Error Rate:</span>
-                        <span class="summary-value" id="errorRate" style="color: #ffffff; font-weight: bold;">0%</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">0%</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Max Position Size:</span>
-                        <span class="summary-value" id="maxPositionSize" style="color: #ffffff; font-weight: bold;">25 GALA</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">25 GALA</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Stop Loss:</span>
-                        <span class="summary-value" id="stopLoss" style="color: #ffffff; font-weight: bold;">5%</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">5%</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Take Profit:</span>
-                        <span class="summary-value" id="takeProfit" style="color: #ffffff; font-weight: bold;">10%</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">10%</span>
                     </div>
                     <div class="summary-item" style="display: flex; justify-content: space-between; padding: 4px 0;">
                         <span class="summary-label" style="color: #ffd700; font-weight: 600;">Risk Score:</span>
-                        <span class="summary-value" id="riskScore" style="color: #ffffff; font-weight: bold;">Low</span>
+                        <span class="summary-value" style="color: #ffffff; font-weight: bold;">Low</span>
                     </div>
                 </div>
             </div>
@@ -1689,82 +1703,17 @@
     </div>
 
     <script>
-        // MarketDataCollector class is now imported from enhanced-statistics.js
+        // Immediate test to see if JavaScript is working
+        console.log('JavaScript is loading...');
+        alert('Script started loading!');
         
-        // Global variables - declared first to avoid initialization errors
-        let botRunning = false;
-        let botStartTime = null;
-        let scanInterval = null;
-        let portfolioValue = 0; // Will be set when wallet connects
-        let tradeCapMode = true; // Enable trade cap for small trades
-        let competitionMode = true; // Enable competition mode for maximum opportunities
-        let totalProfit = 0;
-        let activeTrades = 0;
-        let walletConnected = false;
-        let walletAddress = null;
-        let privateKey = null;
-        let gswapSDK = null;
-        let totalTrades = 0;
-        
-        // Enhanced statistics using SDK API calls
-        let marketDataCollector = new MarketDataCollector();
-        let marketAnalysisEngine = new MarketAnalysisEngine(marketDataCollector);
-        let tradingSignalsGenerator = new TradingSignalsGenerator(marketAnalysisEngine);
-        let tradeStatisticsTracker = new TradeStatisticsTracker();
-        let performanceRiskAnalyzer = new PerformanceRiskAnalyzer(tradeStatisticsTracker);
-        let portfolioManager = new PortfolioManager();
-        
-        // Market Data Management
-        let marketDataHistory = {}; // Store price history for change calculations
-        let lastMarketDataUpdate = 0;
-        
-        // Balance retry system
-        let lastKnownBalances = {};
-        let balanceRetryCount = 0;
-        let maxBalanceRetries = 3;
-        let balanceRetryDelay = 5000; // 5 seconds after fail
-        let balanceSuccessDelay = 30000; // 30 seconds after success
-        let lastBalanceFetchTime = 0;
-        let balanceFetchCooldown = 2000; // 2 seconds minimum between requests
-        let balanceRetryTimeout = null;
-        let balanceSuccessTimeout = null; // Timer for successful refresh
-        
-        // Price freshness tracking - CRITICAL FOR SAFETY
-        let lastPriceUpdateTime = 0;
-        let PRICE_FRESHNESS_LIMIT = 30000; // 30 seconds in milliseconds
-        
-        // Price freshness validation - CRITICAL FOR SAFETY
-        function isPriceDataFresh() {
-            if (lastPriceUpdateTime === 0) {
-                return false; // No price data loaded yet
-            }
-            
-            const timeSinceUpdate = Date.now() - lastPriceUpdateTime;
-            const isFresh = timeSinceUpdate <= PRICE_FRESHNESS_LIMIT;
-            
-            if (!isFresh) {
-                const staleTime = Math.round(timeSinceUpdate / 1000);
-                logMessage(`⚠️ PRICE DATA STALE: ${staleTime}s old (max: ${PRICE_FRESHNESS_LIMIT/1000}s)`, 'warning');
-            }
-            
-            return isFresh;
+        // Test if we can define a simple function
+        function testScriptLoading() {
+            alert('Script is loading correctly!');
         }
         
-        function getPriceFreshnessStatus() {
-            if (lastPriceUpdateTime === 0) {
-                return { fresh: false, age: 'Never loaded', message: 'No price data available' };
-            }
-            
-            const timeSinceUpdate = Date.now() - lastPriceUpdateTime;
-            const ageSeconds = Math.round(timeSinceUpdate / 1000);
-            const isFresh = timeSinceUpdate <= PRICE_FRESHNESS_LIMIT;
-            
-            return {
-                fresh: isFresh,
-                age: `${ageSeconds}s`,
-                message: isFresh ? 'Fresh' : 'Stale'
-            };
-        }
+        // Make it globally available immediately
+        window.testScriptLoading = testScriptLoading;
         
         // Function to enforce log heights after content updates
         function enforceLogHeights() {
@@ -1905,8 +1854,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOMContentLoaded event fired - starting initialization v9.1.9');
-            console.log('🔍 Current timestamp:', new Date().toISOString());
+            console.log('🚀 DOMContentLoaded event fired - starting initialization');
             
             // Check server status on page load (non-blocking)
             checkServerStatus().catch(error => {
@@ -2232,16 +2180,10 @@
                 }
             }, 2000);
             
-            // Initialize the bot with delay to ensure everything is loaded
+            // Initialize the bot
             console.log('🎯 About to call initBot()');
-            setTimeout(() => {
-                try {
-                    initBot();
-                    console.log('✅ initBot() completed successfully');
-                } catch (error) {
-                    console.error('❌ initBot() failed:', error);
-                }
-            }, 100);
+            initBot();
+            console.log('✅ initBot() completed');
             
             // Debug: Check if functions are accessible
             console.log('🔍 Button functions check:');
@@ -2252,11 +2194,6 @@
             console.log('clearPrivateKey:', typeof clearPrivateKey);
             console.log('openConfig:', typeof openConfig);
             console.log('disconnectWallet:', typeof disconnectWallet);
-            
-            // Test button functionality
-            setTimeout(() => {
-                testButtonFunctionality();
-            }, 500);
             
             // Test button click handlers
             setTimeout(() => {
@@ -2295,55 +2232,38 @@
 
         // Function to verify the last transaction manually
 
-        // Additional variables
+        // Global variables
+        let botRunning = false;
+        let botStartTime = null;
+        let scanInterval = null;
+        let portfolioValue = 0; // Will be set when wallet connects
+        let tradeCapMode = true; // Enable trade cap for small trades
+        let competitionMode = true; // Enable competition mode for maximum opportunities
+        let totalProfit = 0;
+        let activeTrades = 0;
         let tokenPrices = {};
         let priceHistory = {};
         let tradingPairs = [];
+        let totalTrades = 0;
         
-        // Update Market Data Display
-        function updateMarketDataDisplay() {
-            const marketDataElement = document.getElementById('marketData');
-            if (!marketDataElement) return;
-            
-            // Get current market data from collector
-            const marketData = marketDataCollector.getMarketData();
-            
-            // Sort by price change (most volatile first)
-            marketData.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
-            
-            // Generate HTML for market data
-            let html = '';
-            marketData.forEach(item => {
-                if (item.price === null || item.price === undefined) return;
-                
-                const changeClass = item.change > 0 ? 'positive' : 'negative';
-                const changeSymbol = item.change > 0 ? '+' : '';
-                const changeText = item.change !== 0 ? `${changeSymbol}${item.change.toFixed(2)}%` : '0.00%';
-                
-                html += `
-                    <div class="market-item">
-                        <span class="token-name">${item.symbol}/USD</span>
-                        <span class="price">$${item.price.toFixed(6)}</span>
-                        <span class="change ${changeClass}">${changeText}</span>
-                    </div>
-                `;
-            });
-            
-            // Add timestamp
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            html += `
-                <div class="market-item" style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px;">
-                    <span class="token-name" style="font-size: 10px; color: #00ff00;">Last Update</span>
-                    <span class="price" style="font-size: 10px; color: #00ff00;">${timeString}</span>
-                    <span class="change" style="font-size: 10px; color: #00ff00;">Live Data</span>
-                </div>
-            `;
-            
-            marketDataElement.innerHTML = html;
-        }
+        // Enhanced statistics using SDK API calls
+        let marketDataCollector = new MarketDataCollector();
+        let marketAnalysisEngine = new MarketAnalysisEngine(marketDataCollector);
+        let tradingSignalsGenerator = new TradingSignalsGenerator(marketAnalysisEngine);
+        let tradeStatisticsTracker = new TradeStatisticsTracker();
+        let performanceRiskAnalyzer = new PerformanceRiskAnalyzer(tradeStatisticsTracker);
+        let portfolioManager = new PortfolioManager();
         
-        // Additional balance variables
+        // Balance retry system
+        let lastKnownBalances = {};
+        let balanceRetryCount = 0;
+        let maxBalanceRetries = 3;
+        let balanceRetryDelay = 5000; // 5 seconds after fail
+        let balanceSuccessDelay = 30000; // 30 seconds after success
+        let lastBalanceFetchTime = 0;
+        let balanceFetchCooldown = 2000; // 2 seconds minimum between requests
+        let balanceRetryTimeout = null;
+        let balanceSuccessTimeout = null; // Timer for successful refresh
         let lastSuccessfulBalanceUpdate = null; // Timestamp of last successful balance fetch
         let balanceUpdateTimer = null; // Timer for displaying time since last update
 
@@ -2369,7 +2289,9 @@
         let tradesThisSecond = 0;
         let currentSecond = Math.floor(Date.now() / 1000);
         
-        // Additional wallet variables already declared at top
+        // Wallet variables
+        let walletConnected = false;
+        let walletAddress = null;
         
         // Persistent Transaction History
         let transactionHistory = [];
@@ -2401,13 +2323,7 @@
                     totalTrades = tradingStats.totalTrades;
                     totalProfit = tradingStats.totalProfit;
                     
-                    // Update swap statistics variables
-                    totalSwaps = tradingStats.totalTrades || 0;
-                    successfulSwaps = tradingStats.successfulTrades || 0;
-                    failedSwaps = tradingStats.failedTrades || 0;
-                    
                     console.log('📊 Loaded trading statistics:', tradingStats);
-                    console.log('📊 Updated swap variables:', { totalSwaps, successfulSwaps, failedSwaps });
                 }
             } catch (error) {
                 console.error('Failed to load trading statistics:', error);
@@ -2423,11 +2339,6 @@
                 tradingStats.totalTrades = totalTrades;
                 tradingStats.totalProfit = totalProfit;
                 tradingStats.sessionStartTime = tradingStats.sessionStartTime || new Date().toISOString();
-                
-                // Update swap statistics variables to match tradingStats
-                totalSwaps = tradingStats.totalTrades || 0;
-                successfulSwaps = tradingStats.successfulTrades || 0;
-                failedSwaps = tradingStats.failedTrades || 0;
                 
                 localStorage.setItem('galaswap_trading_stats', JSON.stringify(tradingStats));
                 console.log('💾 Saved trading statistics:', tradingStats);
@@ -2722,6 +2633,7 @@
             logMessage(`📥 Exported ${realTransactions.length} real transactions successfully`, 'success');
         }
         let galaBalance = 0;
+        let privateKey = null;
         let privateKeySet = false;
         
         // Private key management with persistent storage
@@ -3135,7 +3047,7 @@
         let failedSwaps = 0;
         let swapHistory = [];
         
-        // Trading Mode Configuration - v9.1.9 BUTTON FIX WORKING CACHE REFRESH
+        // Trading Mode Configuration - v9.1.4 FORCE CACHE REFRESH
         let tradingMode = 'conservative'; // 'conservative', 'competition', 'tradecap'
         
         // Conservative Mode Configuration (SAFE & STEADY)
@@ -3397,7 +3309,8 @@
             }
         }
         
-        // SDK instance already declared at top of script
+        // Initialize SDK instance
+        let gswapSDK = null;
         
         // Initialize SDK function
         async function initializeSDK() {
@@ -3879,14 +3792,11 @@
 
         // Initialize the bot
         function initBot() {
-            console.log('Bot version 9.1.8 - Live Market Data System loaded!');
+            console.log('Bot version 9.0 - 3-Mode Trading System loaded!');
             logMessage('Bot initialized with official GSwap SDK structure. Ready to start trading!', 'info');
             
             // Initialize with safe defaults first
             initializeBotDefaults();
-            
-            // Initialize market data display
-            updateMarketDataDisplay();
             
             // Test button functions
             setTimeout(() => {
@@ -3938,7 +3848,6 @@
                 }, 100);
                 
                 // Then try to load real data
-                console.log('🔍 About to call loadTokenPrices()...');
                 loadTokenPrices().catch(error => {
                     console.error('Failed to load token prices:', error);
                     logMessage('⚠️ Failed to load token prices. Using default values.', 'warning');
@@ -5239,9 +5148,6 @@
             updateStatus();
             updateBalanceDisplay();
             updateTokenDisplay();
-            updateTradingSignals();
-            updateSwapStats();
-            updatePerformanceMetrics();
             
             logMessage('✅ Bot initialized with safe defaults', 'success');
         }
@@ -5260,6 +5166,9 @@
                 if (selectDropdown) {
                     selectDropdown.value = tradingMode;
                 }
+                
+                // Update current mode display
+                updateCurrentModeDisplay(tradingMode);
                 
                 // Update mode banner
                 updateModeBanner();
@@ -5597,14 +5506,10 @@
 
         // Load token prices from server
         async function loadTokenPrices() {
-            console.log('🚀 loadTokenPrices() function called!');
             try {
-                console.log('🔍 About to log message...');
                 logMessage('🔄 Loading token prices from server...', 'info');
-                console.log('✅ Log message sent, about to make fetch request...');
                 
                 // Use server endpoint for price data
-                console.log('🌐 Making fetch request to server...');
                 const response = await fetch('http://localhost:3000/api/prices', {
                     method: 'POST',
                     headers: {
@@ -5615,31 +5520,19 @@
                         tokens: KNOWN_TOKENS
                     })
                 });
-                console.log('📡 Fetch response received:', response.status);
 
                 if (!response.ok) {
                     throw new Error(`Server error! status: ${response.status} - ${response.statusText}`);
                 }
 
-                console.log('📄 About to parse JSON response...');
                 const data = await response.json();
-                console.log('✅ JSON parsed successfully:', data);
                 logMessage(`📊 Server response received: ${JSON.stringify(data).substring(0, 200)}...`, 'info');
                 
-                console.log('🔍 Checking response format...');
-                console.log('data.status:', data.status);
-                console.log('data.data:', data.data);
-                console.log('Array.isArray(data.data):', Array.isArray(data.data));
-                
                 if (data.status === 200 && data.data && Array.isArray(data.data)) {
-                    console.log('✅ Response format is valid, processing prices...');
                     let successCount = 0;
                     KNOWN_TOKENS.forEach((token, index) => {
-                        console.log(`🔍 Processing token ${index}: ${token}, price: ${data.data[index]}`);
                         const basePrice = parseFloat(data.data[index]);
-                        console.log(`💰 Parsed price for ${token}: ${basePrice}`);
                         if (basePrice > 0 && !isNaN(basePrice) && data.data[index] !== null) {
-                            console.log(`✅ Valid price found for ${token}: ${basePrice}`);
                             // Add some random variation for testing (simulate market movement)
                             const variation = (Math.random() - 0.5) * 0.02; // ±1% variation
                             const price = basePrice * (1 + variation);
@@ -5667,14 +5560,6 @@
                         }
                     });
                     
-                    console.log(`🎯 Finished processing ${KNOWN_TOKENS.length} tokens, successCount: ${successCount}`);
-                    console.log(`📊 tokenPrices object after processing:`, tokenPrices);
-                    
-                    // Update price freshness timestamp - CRITICAL FOR SAFETY
-                    lastPriceUpdateTime = Date.now();
-                    const freshnessTime = new Date(lastPriceUpdateTime).toLocaleTimeString();
-                    logMessage(`⏰ Price data timestamp: ${freshnessTime} (FRESH)`, 'info');
-                    
                     if (successCount === 0) {
                         logMessage(`❌ NO REAL-TIME PRICES AVAILABLE: All ${KNOWN_TOKENS.length} tokens failed to load`, 'error');
                         logMessage(`🚫 TRADING BLOCKED: Cannot trade without real-time price data`, 'error');
@@ -5684,56 +5569,31 @@
                     } else {
                         logMessage(`✅ Token prices loaded successfully: ${successCount}/${KNOWN_TOKENS.length} tokens`, 'success');
                     }
-                    
-                    // Update market data display with new prices
-                    console.log(`🔄 Updating market data collector with tokenPrices:`, tokenPrices);
-                    marketDataCollector.updateMarketData(tokenPrices);
-                    console.log(`🔄 Calling updateMarketDataDisplay()...`);
-                    updateMarketDataDisplay();
-                    console.log(`✅ Market data display updated successfully`);
-                    
-                    try {
-                        console.log(`🔄 Calling updateTokenDisplay()...`);
-                        updateTokenDisplay();
-                        console.log(`✅ updateTokenDisplay() completed`);
-                    } catch (error) {
-                        console.error(`❌ Error in updateTokenDisplay():`, error);
-                    }
-                    
-                    try {
-                        console.log(`🔄 Calling updateBalanceDisplay()...`);
-                        updateBalanceDisplay(); // Update balances when prices change
-                        console.log(`✅ updateBalanceDisplay() completed`);
-                    } catch (error) {
-                        console.error(`❌ Error in updateBalanceDisplay():`, error);
-                    }
-                    
-                    try {
-                        console.log(`🔄 Calling updateTradingSignals()...`);
-                        updateTradingSignals(); // Update trading signals with new price data
-                        console.log(`✅ updateTradingSignals() completed`);
-                    } catch (error) {
-                        console.error(`❌ Error in updateTradingSignals():`, error);
-                    }
-                    
-                    // Recalculate portfolio value now that we have real-time prices
-                    try {
-                        console.log(`🔄 Recalculating portfolio with new price data...`);
-                        calculatePortfolioValue();
-                        console.log(`✅ Portfolio recalculated with real-time prices`);
-                    } catch (error) {
-                        console.error(`❌ Error recalculating portfolio:`, error);
-                    }
+                    updateTokenDisplay();
+                    updateBalanceDisplay(); // Update balances when prices change
                 } else {
                     throw new Error(`Invalid response format: status=${data.status}, data=${JSON.stringify(data.data).substring(0, 100)}`);
                 }
             } catch (error) {
                 logMessage(`❌ Failed to load token prices: ${error.message}`, 'error');
-                logMessage(`🚫 TRADING BLOCKED: Cannot trade without real-time price data`, 'error');
+                logMessage('🔄 Using fallback prices for demo purposes', 'info');
                 
-                // No fallback prices - trading is blocked until real data is available
+                // Fallback to demo prices if API fails
                 KNOWN_TOKENS.forEach(token => {
-                    tokenPrices[token] = null; // Explicitly set to null
+                    if (!tokenPrices[token] || isNaN(tokenPrices[token])) {
+                        const symbol = getTokenSymbol(token);
+                        switch (symbol) {
+                            case 'GALA': tokenPrices[token] = 0.0176; break;
+                            case 'GUSDC': tokenPrices[token] = 1.0004; break;
+                            case 'ETIME': tokenPrices[token] = 0.0052; break;
+                            case 'FILM': tokenPrices[token] = 0.0095; break;
+                            case 'GTON': tokenPrices[token] = 0.0175; break;
+                            case 'GMUSIC': tokenPrices[token] = 1.0000; break;
+                            case 'GOSMI': tokenPrices[token] = 0.0089; break;
+                            default: tokenPrices[token] = 1.0; break;
+                        }
+                        logMessage(`📊 Set fallback price for ${symbol}: $${tokenPrices[token]}`, 'info');
+                    }
                 });
                 
                 updateTokenDisplay();
@@ -5741,162 +5601,27 @@
             }
         }
 
-        // Update Performance & Risk metrics based on current trading mode
-        function updatePerformanceMetrics() {
-            const activeConfig = getActiveConfig();
-            
-            // Update scan frequency
-            const scanFreqEl = document.getElementById('scanFrequency');
-            if (scanFreqEl) scanFreqEl.textContent = `${activeConfig.scanInterval}s`;
-            
-            // Update response time (calculated based on mode)
-            const responseTimeEl = document.getElementById('avgResponseTime');
-            if (responseTimeEl) {
-                const responseTime = activeConfig.riskLevel === 'high' ? '50ms' : 
-                                   activeConfig.riskLevel === 'medium' ? '100ms' : '150ms';
-                responseTimeEl.textContent = responseTime;
-            }
-            
-            // Update API calls per minute (calculated based on scan frequency)
-            const apiCallsEl = document.getElementById('apiCallsPerMin');
-            if (apiCallsEl) {
-                const callsPerMin = Math.round(60 / activeConfig.scanInterval);
-                apiCallsEl.textContent = callsPerMin.toString();
-            }
-            
-            // Update error rate (simulated based on risk level)
-            const errorRateEl = document.getElementById('errorRate');
-            if (errorRateEl) {
-                const errorRate = activeConfig.riskLevel === 'high' ? '2%' : 
-                                 activeConfig.riskLevel === 'medium' ? '1%' : '0%';
-                errorRateEl.textContent = errorRate;
-            }
-            
-            // Update max position size
-            const maxPosEl = document.getElementById('maxPositionSize');
-            if (maxPosEl) maxPosEl.textContent = `${activeConfig.maxPositionSize} GALA`;
-            
-            // Update stop loss
-            const stopLossEl = document.getElementById('stopLoss');
-            if (stopLossEl) stopLossEl.textContent = `${activeConfig.stopLoss}%`;
-            
-            // Update take profit
-            const takeProfitEl = document.getElementById('takeProfit');
-            if (takeProfitEl) takeProfitEl.textContent = `${activeConfig.profitTarget}%`;
-            
-            // Update risk score with color coding
-            const riskScoreEl = document.getElementById('riskScore');
-            if (riskScoreEl) {
-                const riskLevel = activeConfig.riskLevel;
-                riskScoreEl.textContent = riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1);
-                
-                // Color coding based on risk level
-                if (riskLevel === 'high') {
-                    riskScoreEl.style.color = '#ff4444'; // Red for high risk
-                } else if (riskLevel === 'medium') {
-                    riskScoreEl.style.color = '#ffaa00'; // Orange for medium risk
-                } else {
-                    riskScoreEl.style.color = '#44ff44'; // Green for low risk
-                }
-            }
-            
-            console.log('📊 Updated Performance & Risk metrics for mode:', tradingMode);
-        }
-
-        // Update trading signals display
-        function updateTradingSignals() {
-            const tradingSignalsElement = document.getElementById('tradingSignals');
-            if (!tradingSignalsElement) return;
-            
-            tradingSignalsElement.innerHTML = '';
-            
-            // Get all tokens with valid prices
-            const tokensWithPrices = Object.entries(tokenPrices)
-                .filter(([token, price]) => price !== null && price !== undefined && price > 0)
-                .sort((a, b) => b[1] - a[1]); // Sort by price (highest first)
-            
-            if (tokensWithPrices.length === 0) {
-                const signalItem = document.createElement('div');
-                signalItem.className = 'token-item';
-                signalItem.innerHTML = `
-                    <div class="token-name">📊 No price data available</div>
-                    <div class="token-price">Waiting for market data...</div>
-                    <div class="token-change">-</div>
-                `;
-                tradingSignalsElement.appendChild(signalItem);
-                return;
-            }
-            
-            // Generate signals for each token
-            tokensWithPrices.forEach(([token, price]) => {
-                const signalItem = document.createElement('div');
-                signalItem.className = 'token-item';
-                
-                // Analyze the token opportunity
-                const analysis = analyzeOpportunity(token, price);
-                const symbol = getTokenSymbol(token);
-                
-                // Determine signal strength and color
-                let signalStrength, signalColor, signalClass;
-                if (analysis.score > 0.7) {
-                    signalStrength = 'Strong Buy';
-                    signalColor = '🟢';
-                    signalClass = 'positive';
-                } else if (analysis.score > 0.6) {
-                    signalStrength = 'Buy';
-                    signalColor = '🟢';
-                    signalClass = 'positive';
-                } else if (analysis.score > 0.4) {
-                    signalStrength = 'Hold';
-                    signalColor = '🟡';
-                    signalClass = 'neutral';
-                } else if (analysis.score > 0.3) {
-                    signalStrength = 'Sell';
-                    signalColor = '🔴';
-                    signalClass = 'negative';
-                } else {
-                    signalStrength = 'Strong Sell';
-                    signalColor = '🔴';
-                    signalClass = 'negative';
-                }
-                
-                // Format RSI value
-                const rsiValue = analysis.rsi ? analysis.rsi.toFixed(0) : 'N/A';
-                
-                // Add confidence indicator
-                const confidence = analysis.confidence ? Math.round(analysis.confidence * 100) : 0;
-                const confidenceText = confidence > 70 ? 'High' : confidence > 40 ? 'Med' : 'Low';
-                
-                signalItem.innerHTML = `
-                    <div class="token-name">${signalColor} ${symbol} - ${signalStrength}</div>
-                    <div class="token-price">RSI: ${rsiValue} | ${confidenceText}</div>
-                    <div class="token-change ${signalClass}">${analysis.score > 0.5 ? 'Bullish' : analysis.score < 0.5 ? 'Bearish' : 'Neutral'}</div>
-                `;
-                
-                tradingSignalsElement.appendChild(signalItem);
-            });
-            
-            // Add timestamp
-            const now = new Date();
-            const timeString = now.toLocaleTimeString();
-            const timestampItem = document.createElement('div');
-            timestampItem.className = 'token-item';
-            timestampItem.style.cssText = 'border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; font-size: 10px;';
-            timestampItem.innerHTML = `
-                <div class="token-name" style="color: #00ff00;">Last Update</div>
-                <div class="token-price" style="color: #00ff00;">${timeString}</div>
-                <div class="token-change" style="color: #00ff00;">Live Signals</div>
-            `;
-            tradingSignalsElement.appendChild(timestampItem);
-        }
-
         // Update the token display
         function updateTokenDisplay() {
             const tokenList = document.getElementById('tokenList');
             tokenList.innerHTML = '';
 
-            // Get all arbitrage opportunities (no individual token prices)
+            // Get all opportunities including arbitrage
             const allOpportunities = [];
+            
+            // Add regular token opportunities
+            Object.entries(tokenPrices).forEach(([token, price]) => {
+                const opportunity = analyzeOpportunity(token, price);
+                const arbitrage = detectArbitrageOpportunity(token, price);
+                
+                allOpportunities.push({
+                    type: 'token',
+                    token: token,
+                    price: price,
+                    opportunity: opportunity,
+                    arbitrage: arbitrage
+                });
+            });
             
             // Add arbitrage opportunities between token pairs
             const arbitrageOpportunities = detectCrossTokenArbitrage();
@@ -5906,7 +5631,7 @@
             const triangleOpportunities = detectTriangleArbitrage();
             allOpportunities.push(...triangleOpportunities);
 
-            // Sort by arbitrage opportunity score (triangle arbitrage gets highest priority)
+            // Sort by combined opportunity score (triangle arbitrage gets highest priority)
             allOpportunities.sort((a, b) => {
                 let scoreA, scoreB;
                 if (a.type === 'triangle') {
@@ -5914,7 +5639,7 @@
                 } else if (a.type === 'arbitrage') {
                     scoreA = a.arbitrage.profitPercent;
                 } else {
-                    scoreA = 0; // No individual token opportunities
+                    scoreA = a.opportunity.score;
                 }
                 
                 if (b.type === 'triangle') {
@@ -5922,24 +5647,11 @@
                 } else if (b.type === 'arbitrage') {
                     scoreB = b.arbitrage.profitPercent;
                 } else {
-                    scoreB = 0; // No individual token opportunities
+                    scoreB = b.opportunity.score;
                 }
                 
                 return scoreB - scoreA;
             });
-
-            // If no opportunities, show a message
-            if (allOpportunities.length === 0) {
-                const tokenItem = document.createElement('div');
-                tokenItem.className = 'token-item';
-                tokenItem.innerHTML = `
-                    <div class="token-name">📊 No trading opportunities detected</div>
-                    <div class="token-price">Waiting for price data...</div>
-                    <div class="token-change">-</div>
-                `;
-                tokenList.appendChild(tokenItem);
-                return;
-            }
 
             allOpportunities.forEach((item) => {
                 const tokenItem = document.createElement('div');
@@ -5967,6 +5679,27 @@
                         <div class="token-price">$${item.arbitrage.fromPrice.toFixed(6)} → $${item.arbitrage.toPrice.toFixed(6)}</div>
                         <div class="token-change ${profitClass}">${profitSymbol}${item.arbitrage.profitPercent.toFixed(2)}%</div>
                     `;
+                } else {
+                    // Display regular token opportunity
+                    const change = calculatePriceChange(item.token);
+                const changeClass = change >= 0 ? 'positive' : 'negative';
+                const changeSymbol = change >= 0 ? '+' : '';
+                
+                // Determine if this is an opportunity
+                    if (item.opportunity.score > 0.7) {
+                    tokenItem.classList.add('opportunity');
+                    } else if (item.opportunity.score < 0.3) {
+                    tokenItem.classList.add('risk');
+                }
+                    
+                    // Add arbitrage indicator if available
+                    const arbitrageIndicator = item.arbitrage.profitPercent > 1 ? ' 🔄' : '';
+                
+                tokenItem.innerHTML = `
+                        <div class="token-name">${getTokenSymbol(item.token)}${arbitrageIndicator}</div>
+                        <div class="token-price">$${item.price.toFixed(6)}</div>
+                    <div class="token-change ${changeClass}">${changeSymbol}${change.toFixed(2)}%</div>
+                `;
                 }
                 
                 tokenList.appendChild(tokenItem);
@@ -6090,27 +5823,18 @@
                         const priceB = tokenPrices[tokenB];
                         const priceC = tokenPrices[tokenC];
                         
-                        // Realistic triangle arbitrage calculation
-                        // This simulates actual token-to-token swaps with realistic slippage
+                        // Simplified triangle arbitrage calculation
+                        // Start with 100 units of tokenA
                         const startAmount = 100;
+                        const step1 = startAmount / priceA; // A -> B
+                        const step2 = step1 / priceB; // B -> C  
+                        const step3 = step2 * priceC; // C -> A
                         
-                        // Step 1: A -> B (direct token swap with 0.3% slippage)
-                        const exchangeRateAB = priceA / priceB; // How many B per A
-                        const amountB = startAmount * exchangeRateAB * 0.997; // 0.3% slippage
-                        
-                        // Step 2: B -> C (direct token swap with 0.3% slippage)
-                        const exchangeRateBC = priceB / priceC; // How many C per B
-                        const amountC = amountB * exchangeRateBC * 0.997; // 0.3% slippage
-                        
-                        // Step 3: C -> A (direct token swap with 0.3% slippage)
-                        const exchangeRateCA = priceC / priceA; // How many A per C
-                        const finalAmountA = amountC * exchangeRateCA * 0.997; // 0.3% slippage
-                        
-                        const profit = finalAmountA - startAmount;
+                        const profit = step3 - startAmount;
                         const profitPercent = (profit / startAmount) * 100;
                         
-                        // Show all opportunities for analysis (including negative ones)
-                        if (Math.abs(profitPercent) > 0.01) {
+                        // Only consider profitable opportunities (>1% profit)
+                        if (profitPercent > 1) {
                             triangleOpportunities.push({
                                 type: 'triangle',
                                 triangle: {
@@ -6126,7 +5850,7 @@
                                     priceB: priceB,
                                     priceC: priceC,
                                     startAmount: startAmount,
-                                    finalAmount: finalAmountA
+                                    finalAmount: step3
                                 }
                             });
                         }
@@ -6134,10 +5858,8 @@
                 }
             }
             
-            // Sort by profit percentage (highest first) and limit to top 10
-            return triangleOpportunities
-                .sort((a, b) => b.triangle.profitPercent - a.triangle.profitPercent)
-                .slice(0, 10);
+            // Sort by profit percentage (highest first)
+            return triangleOpportunities.sort((a, b) => b.triangle.profitPercent - a.triangle.profitPercent);
         }
 
         // Analyze trading opportunity with advanced strategies
@@ -7001,14 +6723,6 @@
                 return;
             }
             
-            // CRITICAL SAFETY CHECK: Ensure price data is fresh (less than 30 seconds old)
-            if (!isPriceDataFresh()) {
-                const freshnessStatus = getPriceFreshnessStatus();
-                logMessage(`🚫 TRADING BLOCKED: Price data is ${freshnessStatus.age} old (max: 30s)`, 'error');
-                logMessage(`⚠️ REFRESH REQUIRED: Price data must be refreshed before trading`, 'warning');
-                return;
-            }
-            
             logMessage(`🔧 executeTrade called: ${action} ${symbol} at $${price.toFixed(6)}`, 'info');
             
             if (!walletConnected) {
@@ -7810,36 +7524,17 @@
             if (failedSwapsEl) failedSwapsEl.textContent = failedSwaps.toString();
             
             const successRate = totalSwaps > 0 ? (successfulSwaps / totalSwaps * 100).toFixed(1) : 0;
-            const successRateEl = document.getElementById('swapSuccessRate');
-            if (successRateEl) successRateEl.textContent = `${successRate}%`;
+            document.getElementById('swapSuccessRate').textContent = `${successRate}%`;
             
-            // Calculate additional statistics from tradingStats
-            const avgProfit = totalSwaps > 0 ? (totalProfit / totalSwaps).toFixed(2) : 0;
-            const avgProfitEl = document.getElementById('avgProfitPerTrade');
-            if (avgProfitEl) avgProfitEl.textContent = `$${avgProfit}`;
+            // Calculate additional statistics
+            const completedTrades = tradeHistory.length;
+            const avgProfit = completedTrades > 0 ? (totalProfit / completedTrades).toFixed(2) : 0;
+            const bestTrade = completedTrades > 0 ? Math.max(...tradeHistory.map(t => t.profit)).toFixed(2) : 0;
+            const worstTrade = completedTrades > 0 ? Math.min(...tradeHistory.map(t => t.profit)).toFixed(2) : 0;
             
-            const bestTrade = tradingStats.bestTrade || 0;
-            const bestTradeEl = document.getElementById('bestTrade');
-            if (bestTradeEl) bestTradeEl.textContent = `$${bestTrade.toFixed(2)}`;
-            
-            const worstTrade = tradingStats.worstTrade || 0;
-            const worstTradeEl = document.getElementById('worstTrade');
-            if (worstTradeEl) worstTradeEl.textContent = `$${worstTrade.toFixed(2)}`;
-            
-            const totalVolume = tradingStats.totalVolume || 0;
-            const totalVolumeEl = document.getElementById('totalVolume');
-            if (totalVolumeEl) totalVolumeEl.textContent = `$${totalVolume.toFixed(2)}`;
-            
-            console.log('📊 Updated swap statistics:', {
-                totalSwaps,
-                successfulSwaps,
-                failedSwaps,
-                successRate,
-                avgProfit,
-                bestTrade,
-                worstTrade,
-                totalVolume
-            });
+            document.getElementById('avgProfit').textContent = `$${avgProfit}`;
+            document.getElementById('bestTrade').textContent = `$${bestTrade}`;
+            document.getElementById('worstTrade').textContent = `$${worstTrade}`;
             
             // Update last trade time
             const lastTradeTimeElement = document.getElementById('lastTradeTime');
@@ -7883,20 +7578,6 @@
                 avgProfitElement.className = 'summary-value negative';
             } else {
                 avgProfitElement.className = 'summary-value';
-            }
-            
-            // Update price freshness status - CRITICAL FOR SAFETY
-            const priceFreshnessElement = document.getElementById('priceFreshness');
-            if (priceFreshnessElement) {
-                const freshnessStatus = getPriceFreshnessStatus();
-                priceFreshnessElement.textContent = freshnessStatus.age;
-                
-                // Color code based on freshness
-                if (freshnessStatus.fresh) {
-                    priceFreshnessElement.style.color = '#4caf50'; // Green for fresh
-                } else {
-                    priceFreshnessElement.style.color = '#f44336'; // Red for stale
-                }
             }
         }
 
@@ -8072,6 +7753,20 @@
             console.log(`🔍 Banner text after update: "${modeBanner.textContent}"`);
         }
 
+        // Test function to verify mode switching works
+        function testModeSwitching() {
+            console.log('🧪 Testing mode switching...');
+            console.log(`Current mode: ${tradingMode}`);
+            
+            // Test all three modes
+            const modes = ['conservative', 'tradecap', 'competition'];
+            let currentIndex = modes.indexOf(tradingMode);
+            let nextIndex = (currentIndex + 1) % modes.length;
+            let nextMode = modes[nextIndex];
+            
+            console.log(`Switching from ${tradingMode} to ${nextMode}`);
+            setTradingMode(nextMode);
+        }
 
         // Set trading mode (3-mode system)
         function setTradingMode(mode) {
@@ -8103,11 +7798,11 @@
                 selectDropdown.value = mode;
             }
             
+            // Update current mode display
+            updateCurrentModeDisplay(mode);
+            
             // Update mode banner
             updateModeBanner();
-            
-            // Update Performance & Risk metrics
-            updatePerformanceMetrics();
             
             // Save bot configuration when mode changes
             saveBotConfig();
@@ -8233,54 +7928,6 @@
             }
         }
 
-        // Test button functionality
-        function testButtonFunctionality() {
-            console.log('🧪 Testing button functionality...');
-            
-            const buttons = [
-                { selector: 'button[onclick="startBot()"]', name: 'Start Bot' },
-                { selector: 'button[onclick="stopBot()"]', name: 'Stop Bot' },
-                { selector: 'button[onclick="connectWallet()"]', name: 'Connect Wallet' },
-                { selector: 'button[onclick="disconnectWallet()"]', name: 'Disconnect Wallet' },
-                { selector: 'button[onclick="refreshAllBalances()"]', name: 'Refresh Balances' },
-                { selector: 'button[onclick="openConfig()"]', name: 'Open Config' }
-            ];
-            
-            buttons.forEach(button => {
-                const element = document.querySelector(button.selector);
-                if (element) {
-                    console.log(`✅ ${button.name} button found and clickable`);
-                } else {
-                    console.log(`❌ ${button.name} button NOT found`);
-                }
-            });
-            
-            // Test if functions are accessible
-            const functions = ['startBot', 'stopBot', 'connectWallet', 'disconnectWallet', 'refreshAllBalances', 'openConfig'];
-            functions.forEach(funcName => {
-                if (typeof window[funcName] === 'function') {
-                    console.log(`✅ Function ${funcName} is accessible`);
-                } else {
-                    console.log(`❌ Function ${funcName} is NOT accessible`);
-                }
-            });
-        }
-
-        // CRITICAL FIX: Ensure all functions are globally accessible for onclick handlers
-        window.startBot = startBot;
-        window.stopBot = stopBot;
-        window.connectWallet = connectWallet;
-        window.disconnectWallet = disconnectWallet;
-        window.loadAllTokenBalances = loadAllTokenBalances;
-        window.refreshAllBalances = refreshAllBalances;
-        window.openConfig = openConfig;
-        window.setPrivateKey = setPrivateKey;
-        window.clearPrivateKey = clearPrivateKey;
-        window.toggleTradeCap = toggleTradeCap;
-        window.toggleCompetitionMode = toggleCompetitionMode;
-        window.setTradingMode = setTradingMode;
-        window.testButtonFunctionality = testButtonFunctionality;
-        
         // Bot initialization is handled in DOMContentLoaded event listener above
     </script>
 </body>

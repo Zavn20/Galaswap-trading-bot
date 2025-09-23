@@ -71,15 +71,28 @@ app.get('/api/prices', async (req, res) => {
             'GTON|Unit|none|none',
             'GOSMI|Unit|none|none',
             'FILM|Unit|none|none',
-            'GMUSIC|Unit|none|none'
+            'GMUSIC|Unit|none|none',
+            // Additional tokens from pool pair finder
+            'SILK|Unit|none|none',
+            'GSWAP|Unit|none|none',
+            'GUSDT|Unit|none|none',
+            'GWBTC|Unit|none|none',
+            'GSOL|Unit|none|none',
+            'GWETH|Unit|none|none',
+            'GWXRP|Unit|none|none',
+            'GFARTCOIN|Unit|none|none',
+            'Materium|Unit|none|none',
+            'GSHRAP|Unit|none|none',
+            'GTRUMP|Unit|none|none',
+            'GWTRX|Unit|none|none'
         ];
 
         const prices = [];
         
         for (const token of tokens) {
             try {
-                if (token === 'GUSDC|Unit|none|none') {
-                    // GUSDC is a stablecoin, set to $1.00
+                if (token === 'GUSDC|Unit|none|none' || token === 'GUSDT|Unit|none|none') {
+                    // Stablecoins, set to $1.00
                     prices.push(1.00);
                 } else if (token === 'GALA|Unit|none|none') {
                     // Get GALA price from GUSDC pair
@@ -94,7 +107,7 @@ app.get('/api/prices', async (req, res) => {
                         console.log(`💰 GALA USD price: $${galaUsdPrice} (from GUSDC pair)`);
                     } catch (error) {
                         console.log(`❌ Could not get GALA price: ${error.message}`);
-                        prices.push(0.0176); // Fallback
+                        prices.push(null); // NO FALLBACK - return null for safety
                     }
                 } else {
                     // Get other token prices via GALA
@@ -106,19 +119,24 @@ app.get('/api/prices', async (req, res) => {
                         );
                         const tokenGalaPrice = parseFloat(quote.outTokenAmount.toString());
                         
-                        // Convert to USD using GALA price
-                        const galaUsdPrice = prices[0] || 0.0176;
+                        // Convert to USD using GALA price - NO FALLBACK
+                        const galaUsdPrice = prices[0];
+                        if (!galaUsdPrice || galaUsdPrice === null) {
+                            console.log(`❌ Cannot calculate USD price for ${token}: GALA price is null`);
+                            prices.push(null);
+                            continue;
+                        }
                         const tokenUsdPrice = tokenGalaPrice * galaUsdPrice;
                         prices.push(tokenUsdPrice);
                         console.log(`📊 ${token}: ${tokenGalaPrice} GALA = $${tokenUsdPrice} USD`);
                     } catch (error) {
                         console.log(`❌ Could not get price for ${token}: ${error.message}`);
-                        prices.push(1); // Fallback
+                        prices.push(null); // NO FALLBACK - return null for safety
                     }
                 }
             } catch (error) {
                 console.log(`❌ Error getting price for ${token}:`, error.message);
-                prices.push(1); // Fallback
+                prices.push(null); // NO FALLBACK - return null for safety
             }
         }
 
