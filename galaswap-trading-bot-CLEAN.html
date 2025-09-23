@@ -3189,7 +3189,7 @@
         // Trade Cap Mode Configuration (SMALL & SAFE TESTING)
         let tradeCapConfig = {
             riskLevel: 'low',
-            maxPositionSize: 5, // Very small position sizes (5-25 GALA)
+            maxPositionSize: 5, // Very small position sizes (10-25 tokens)
             profitTarget: 2, // Quick profit target
             stopLoss: 1, // Very tight stop loss
             scanInterval: 5, // Medium scanning (5 seconds)
@@ -3199,7 +3199,8 @@
             buyThreshold: 0.6, // Medium buy threshold
             sellThreshold: 0.4, // Medium sell threshold
             scope: 'liquid', // Only high-liquidity pairs
-            maxTradeAmount: 25 // Maximum GALA per trade
+            maxTradeAmount: 25, // Maximum tokens per trade
+            minTradeAmount: 10 // Minimum tokens per trade
         };
 
         // GalaChain GSwap SDK Configuration - LIVE TRADING
@@ -6835,7 +6836,7 @@
             
             // Calculate trade amount based on available balance and test mode
             const maxTradeAmount = Math.min(availableBalance * 0.1, tradeCapMode ? 25 : 100); // Use max 10% of balance, account for 1 GALA fee
-            const tradeAmount = tradeCapMode ? Math.min(Math.random() * 20 + 5, maxTradeAmount) : maxTradeAmount; // 5-25 GALA range
+            const tradeAmount = tradeCapMode ? Math.min(Math.random() * 15 + 10, maxTradeAmount) : maxTradeAmount; // 10-25 token range
             
             if (tradeAmount < 1.01) { // Minimum 1.01 GALA to cover 1 GALA fee + 0.01 trade
                 logMessage(`❌ Trade amount too small: ${tradeAmount.toFixed(4)} ${fromSymbol} (need at least 1.01 GALA for fee)`, 'warning');
@@ -7170,7 +7171,7 @@
             
             if (tradeCapMode) {
                 // Trade cap mode: Use small fixed amounts with safety parameters
-                const baseAmount = Math.random() * 20 + 5; // Random between 5-25 GALA
+                const baseAmount = Math.random() * 15 + 10; // Random between 10-25 tokens
                 positionSize = calculateSafePositionSize(token, action, baseAmount);
                 
                 if (positionSize === 0) {
@@ -7179,8 +7180,8 @@
                 }
                 
                 adjustedAmount = positionSize;
-                logMessage(`🔒 TRADE CAP: Using safe position size of ${positionSize.toFixed(4)} GALA`, 'info');
-                logMessage(`🔍 Position calculated: ${(positionSize / price).toFixed(4)} ${symbol} for ${positionSize.toFixed(4)} GALA`, 'info');
+                logMessage(`🔒 TRADE CAP: Using safe position size of ${positionSize.toFixed(4)} tokens`, 'info');
+                logMessage(`🔍 Position calculated: ${(positionSize / price).toFixed(4)} ${symbol} for ${positionSize.toFixed(4)} tokens`, 'info');
             } else {
                 // Live mode: Use full position sizing with safety parameters
                 const activeConfig = getActiveConfig();
@@ -8195,7 +8196,7 @@
                     background = 'rgba(76, 175, 80, 0.1)';
                     break;
                 case 'tradecap':
-                    bannerText = '🔒 TRADE CAP MODE - Small trades (5-25 GALA)';
+                    bannerText = '🔒 TRADE CAP MODE - Small trades';
                     color = '#ff9800';
                     background = 'rgba(255, 152, 0, 0.1)';
                     break;
