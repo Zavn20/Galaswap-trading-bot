@@ -4536,6 +4536,8 @@
             if (window.location.protocol === 'file:') {
                 console.log('⚠️ Running from file:// protocol - CORS will block API calls');
                 logMessage('⚠️ Please open this page via http://localhost:3000 to avoid CORS issues', 'warning');
+                // Still try to load cached balances if available
+                displayLastKnownBalances();
                 return;
             }
             
@@ -5184,6 +5186,15 @@
 
         // Combined function to refresh all balances
         async function refreshAllBalances() {
+            console.log('🔄 Refresh All Balances button clicked');
+            console.log('🔍 Current protocol:', window.location.protocol);
+            console.log('🔍 Wallet connected:', walletConnected);
+            
+            if (!walletConnected) {
+                logMessage('❌ Please connect your wallet first before refreshing balances', 'error');
+                return;
+            }
+            
             logMessage('🔄 Refreshing all balances...', 'info');
             
             // Reset retry count for manual refresh
