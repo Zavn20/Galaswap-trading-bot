@@ -6,6 +6,10 @@ const NodeCache = require('node-cache');
 const { GSwap, PrivateKeySigner } = require('@gala-chain/gswap-sdk');
 const PriceService = require('./price-service');
 
+// Server Version Information
+const SERVER_VERSION = '0.9.1';
+const SERVER_NAME = 'GalaSwap Trading Bot Server';
+
 const app = express();
 const PORT = 3000;
 
@@ -218,6 +222,8 @@ app.get('/api/health', (req, res) => {
     
     res.json({ 
         status: 'healthy', 
+        version: SERVER_VERSION,
+        serverName: SERVER_NAME,
         timestamp: new Date().toISOString(),
         sdk: gswap ? 'initialized' : 'not initialized',
         priceService: priceService ? 'initialized' : 'not initialized',
@@ -812,7 +818,7 @@ async function startServer() {
         }
         
         app.listen(PORT, () => {
-            console.log(`🚀 GalaSwap Trading Bot Server (MULTI-SOURCE OPTIMIZED) running on http://localhost:${PORT}`);
+            console.log(`🚀 ${SERVER_NAME} v${SERVER_VERSION} (MULTI-SOURCE OPTIMIZED) running on http://localhost:${PORT}`);
             console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
             console.log(`💰 Prices endpoint: http://localhost:${PORT}/api/prices`);
             console.log(`📊 Comprehensive prices: http://localhost:${PORT}/api/prices/comprehensive`);
@@ -821,7 +827,7 @@ async function startServer() {
             console.log(`💳 Balance endpoint: http://localhost:${PORT}/api/balance`);
             console.log(`⚡ Performance optimizations: Multi-source pricing, Caching, Compression, Rate Limiting`);
             console.log(`🌐 Price sources: CoinGecko, CoinMarketCap, GalaChain`);
-            console.log(`💡 Open galaswap-trading-bot.html in your browser to start trading!`);
+            console.log(`💡 Open galaswap-trading-bot-CLEAN.html in your browser to start trading!`);
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
@@ -831,7 +837,7 @@ async function startServer() {
             console.log('📊 PROD1 WebSocket is down (403 Forbidden) - server will run without real-time monitoring');
             
             app.listen(PORT, () => {
-                console.log(`🚀 GalaSwap Trading Bot Server (OPTIMIZED) running on http://localhost:${PORT} (Limited Mode)`);
+                console.log(`🚀 ${SERVER_NAME} v${SERVER_VERSION} (OPTIMIZED) running on http://localhost:${PORT} (Limited Mode)`);
                 console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
                 console.log(`💰 Prices endpoint: http://localhost:${PORT}/api/prices`);
                 console.log(`📊 Quote endpoint: http://localhost:${PORT}/api/quote`);
