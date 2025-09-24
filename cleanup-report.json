@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-09-24T21:03:11.229Z",
+  "removedFiles": [],
+  "movedFiles": [
+    "test-buttons.html",
+    "test-endpoints.html",
+    "test-fix.html",
+    "test-frontend-connection.html",
+    "test-frontend-prices.html"
+  ],
+  "keptFiles": [
+    "galaswap-trading-bot-CLEAN.html",
+    "index.html",
+    "real-trading-server.js",
+    "real-trading-server-optimized.js",
+    "real-trading-server-clean.js"
+  ]
+}

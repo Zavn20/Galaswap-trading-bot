@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Corrupted localStorage Data</title>
+</head>
+<body>
+    <h1>Clear Corrupted localStorage Data</h1>
+    <button onclick="clearCorruptedData()">Clear Corrupted Data</button>
+    <div id="output"></div>
+
+    <script>
+        function clearCorruptedData() {
+            const output = document.getElementById('output');
+            const keys = [
+                'galaswap_trading_stats',
+                'galaswap_tx_history', 
+                'galaswap_portfolio_data',
+                'lastKnownBalances',
+                'galaswap_wallet_data',
+                'lastSuccessfulBalanceUpdate'
+            ];
+            
+            let cleared = 0;
+            let errors = 0;
+            
+            keys.forEach(key => {
+                try {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        // Try to parse the data
+                        try {
+                            JSON.parse(data);
+                            console.log(`✅ ${key}: Valid data, keeping`);
+                        } catch (e) {
+                            // Data is corrupted, remove it
+                            localStorage.removeItem(key);
+                            output.innerHTML += `<p>🗑️ Cleared corrupted data: ${key}</p>`;
+                            cleared++;
+                        }
+                    } else {
+                        console.log(`ℹ️ ${key}: No data found`);
+                    }
+                } catch (error) {
+                    output.innerHTML += `<p>❌ Error checking ${key}: ${error.message}</p>`;
+                    errors++;
+                }
+            });
+            
+            output.innerHTML += `<h3>Summary:</h3>`;
+            output.innerHTML += `<p>✅ Cleared ${cleared} corrupted entries</p>`;
+            output.innerHTML += `<p>❌ ${errors} errors encountered</p>`;
+            output.innerHTML += `<p>🔄 Please refresh your trading bot page</p>`;
+        }
+        
+        // Auto-run on page load
+        window.onload = function() {
+            clearCorruptedData();
+        };
+    </script>
+</body>
+</html>

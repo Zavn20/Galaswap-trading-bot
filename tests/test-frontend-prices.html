@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Frontend Price Loading</title>
+</head>
+<body>
+    <h1>Test Frontend Price Loading</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testPriceLoading() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                console.log('Testing comprehensive prices endpoint...');
+                resultsDiv.innerHTML += '<p>🔄 Testing comprehensive prices endpoint...</p>';
+                
+                const response = await fetch('http://localhost:3000/api/prices/comprehensive');
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Data received:', data);
+                
+                if (data.success && data.data && data.data.finalPrices) {
+                    resultsDiv.innerHTML += '<p>✅ Comprehensive data format is valid!</p>';
+                    
+                    // Test the same logic as the frontend
+                    Object.entries(data.data.finalPrices).forEach(([token, priceData]) => {
+                        const basePrice = parseFloat(priceData);
+                        if (basePrice > 0 && !isNaN(basePrice)) {
+                            resultsDiv.innerHTML += `<p>✅ ${token}: $${basePrice.toFixed(6)}</p>`;
+                        } else {
+                            resultsDiv.innerHTML += `<p>❌ Invalid price for ${token}: ${priceData}</p>`;
+                        }
+                    });
+                    
+                    resultsDiv.innerHTML += '<p>🎉 Frontend price loading should work correctly!</p>';
+                } else {
+                    resultsDiv.innerHTML += '<p>❌ Invalid response format</p>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                resultsDiv.innerHTML += `<p>❌ Test failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        testPriceLoading();
+    </script>
+</body>
+</html>
+

@@ -184,3 +184,6 @@ Market data updates automatically every time token prices are loaded from the se
 
 The 📈 Market Data panel is now a **fully functional, live market data display** that provides real-time insights into token price movements and market volatility!
 
+
+
+

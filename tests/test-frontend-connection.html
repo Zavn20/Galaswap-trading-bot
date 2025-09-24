@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+        .test-section { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        button { padding: 10px 20px; margin: 5px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #45a049; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Frontend Connection Test</h1>
+    
+    <div class="test-section">
+        <h2>1️⃣ Health Check</h2>
+        <button onclick="testHealth()">Test Health</button>
+        <div id="health-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2️⃣ Balance Check</h2>
+        <button onclick="testBalance()">Test Balance</button>
+        <div id="balance-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3️⃣ Price Check</h2>
+        <button onclick="testPrices()">Test Prices</button>
+        <div id="price-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4️⃣ Quote Check</h2>
+        <button onclick="testQuote()">Test Quote</button>
+        <div id="quote-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5️⃣ Full Test</h2>
+        <button onclick="runFullTest()">Run All Tests</button>
+        <div id="full-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Health Check Successful</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Health Check Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Health Check Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testBalance() {
+            const resultDiv = document.getElementById('balance-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/balance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        walletAddress: 'eth|089018e67E35BeAAb3F7c28cb0d64dBA04D9268F'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Balance Check Successful</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Balance Check Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Balance Check Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testPrices() {
+            const resultDiv = document.getElementById('price-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/prices`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Price Check Successful</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Price Check Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Price Check Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testQuote() {
+            const resultDiv = document.getElementById('quote-result');
+            resultDiv.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/quote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tokenIn: 'GALA|Unit|none|none',
+                        tokenOut: 'GUSDC|Unit|none|none',
+                        amountIn: '10'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ Quote Check Successful</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Quote Check Failed: ${response.status}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Quote Check Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function runFullTest() {
+            const resultDiv = document.getElementById('full-result');
+            resultDiv.innerHTML = '<div class="info">Running full test...</div>';
+            
+            const results = [];
+            
+            // Test 1: Health
+            try {
+                const healthResponse = await fetch(`${API_BASE}/health`);
+                const healthData = await healthResponse.json();
+                results.push(`✅ Health: ${healthData.status}`);
+            } catch (error) {
+                results.push(`❌ Health: ${error.message}`);
+            }
+            
+            // Test 2: Balance
+            try {
+                const balanceResponse = await fetch(`${API_BASE}/balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress: 'eth|089018e67E35BeAAb3F7c28cb0d64dBA04D9268F' })
+                });
+                const balanceData = await balanceResponse.json();
+                results.push(`✅ Balance: ${balanceData.balances?.length || 0} tokens`);
+            } catch (error) {
+                results.push(`❌ Balance: ${error.message}`);
+            }
+            
+            // Test 3: Prices
+            try {
+                const priceResponse = await fetch(`${API_BASE}/prices`);
+                const priceData = await priceResponse.json();
+                results.push(`✅ Prices: ${Object.keys(priceData.data || {}).length} tokens`);
+            } catch (error) {
+                results.push(`❌ Prices: ${error.message}`);
+            }
+            
+            // Test 4: Quote
+            try {
+                const quoteResponse = await fetch(`${API_BASE}/quote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tokenIn: 'GALA|Unit|none|none',
+                        tokenOut: 'GUSDC|Unit|none|none',
+                        amountIn: '10'
+                    })
+                });
+                const quoteData = await quoteResponse.json();
+                results.push(`✅ Quote: ${quoteData.amountOut} GUSDC`);
+            } catch (error) {
+                results.push(`❌ Quote: ${error.message}`);
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="success">🎯 Full Test Complete!</div>
+                <pre>${results.join('\n')}</pre>
+            `;
+        }
+        
+        // Auto-run full test on page load
+        window.onload = () => {
+            setTimeout(runFullTest, 1000);
+        };
+    </script>
+</body>
+</html>
+
