@@ -39,14 +39,22 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 - **30-Second Freshness**: Price data must be less than 30 seconds old for trading
 - **No Fallback Pricing**: Maximum safety - no trades with stale or estimated prices
 
-## 🆕 Latest Updates (v9.2.1)
+## 🆕 Latest Updates (v0.9.1)
 
-### ⚡ **API Performance Optimizations**
-- **10-Second Price Cache**: Ultra-fresh pricing with 20-second buffer for 30-second requirement
-- **Enhanced Rate Limiting**: Increased to 200 requests/minute for frequent updates
-- **Smart Caching Strategy**: 10s price, 15s balance, 10s quote cache TTLs
-- **SDK Monitoring**: Real-time tracking of SDK errors and rate limit hits
-- **Performance Metrics**: Comprehensive health endpoint with cache statistics
+### ⚡ **GalaChain-Only Pricing**
+- **Accurate Trading**: Uses only GalaChain API prices for trading strategies
+- **Real DEX Prices**: Eliminates price discrepancies from external sources
+- **Enhanced Accuracy**: Trading decisions based on actual DEX pricing
+
+### 🎯 **GUSDT Stablecoin Strategy**
+- **GALA Cost Basis Tracking**: Records GALA paid for stablecoins
+- **5% Profit Threshold**: Sells stablecoins when 5%+ GALA profit achievable
+- **Smart Stablecoin Management**: Works with both GUSDC and GUSDT
+
+### 🔧 **Enhanced Error Recovery**
+- **JSON Parsing Fixes**: Robust localStorage data handling
+- **Automatic Cleanup**: Corrupted data detection and removal
+- **Improved Stability**: Better error handling and recovery
 
 ### 🔒 **Critical Safety Enhancements**
 - **30-Second Price Freshness**: All trades require price data less than 30 seconds old
@@ -100,13 +108,13 @@ A sophisticated automated trading bot for the GalaChain ecosystem, featuring rea
 
 3. **Start the server**
    ```bash
-   node real-trading-server.js
+   node real-trading-server-optimized.js
    ```
 
 4. **Open the interface**
    ```bash
-   start galaswap-trading-bot.html
-   # or open galaswap-trading-bot.html in your browser
+   start galaswap-trading-bot-CLEAN.html
+   # or open galaswap-trading-bot-CLEAN.html in your browser
    ```
 
 5. **Configure your wallet**
@@ -269,4 +277,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **⭐ If you find this project helpful, please give it a star!**
 
-*Built with ❤️ for the GalaChain ecosystem*# Screenshot updated 09/23/2025 02:53:17
+*Built with ❤️ for the GalaChain ecosystem*
+
+---
+
+**Screenshot updated 09/24/2025 17:46:48 - Version 0.9.1**
