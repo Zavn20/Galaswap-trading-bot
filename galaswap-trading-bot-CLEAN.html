@@ -2044,8 +2044,16 @@
             timerManager.setTimeout('update_swap_stats_100', updateSwapStats, 100);
             timerManager.setTimeout('update_swap_stats_500', updateSwapStats, 500);
             
-            // Watch for DOM changes and enforce heights
+            // Watch for DOM changes and enforce heights with aggressive debouncing
+            let lastMutationTime = 0;
             const observer = new MutationObserver(function(mutations) {
+                const now = Date.now();
+                // Only process mutations if at least 100ms have passed since last mutation
+                if (now - lastMutationTime < 100) {
+                    return;
+                }
+                lastMutationTime = now;
+                
                 mutations.forEach(function(mutation) {
                     if (mutation.type === 'childList' || mutation.type === 'attributes') {
                         // Debounce timer creation to prevent spam
@@ -4524,6 +4532,13 @@
         async function loadAllTokenBalances() {
             if (!walletConnected) return;
             
+            // Check if we're running from file:// protocol (CORS issue)
+            if (window.location.protocol === 'file:') {
+                console.log('⚠️ Running from file:// protocol - CORS will block API calls');
+                logMessage('⚠️ Please open this page via http://localhost:3000 to avoid CORS issues', 'warning');
+                return;
+            }
+            
             // Check cooldown to prevent API limit hits
             const now = Date.now();
             if (now - lastBalanceFetchTime < balanceFetchCooldown) {
@@ -5854,6 +5869,14 @@
         async function loadTokenPrices() {
             console.log('🚀 loadTokenPrices() function called!');
             console.log('🔍 Current lastPriceUpdateTime:', lastPriceUpdateTime);
+            
+            // Check if we're running from file:// protocol (CORS issue)
+            if (window.location.protocol === 'file:') {
+                console.log('⚠️ Running from file:// protocol - CORS will block API calls');
+                logMessage('⚠️ Please open this page via http://localhost:3000 to avoid CORS issues', 'warning');
+                return;
+            }
+            
             try {
                 console.log('🔍 About to log message...');
                 logMessage('🔄 Loading GalaChain token prices...', 'info');
@@ -7472,8 +7495,8 @@
             }
             
             // Update prices first (with caching for ultra-fast scanning)
-        if (!window.lastPriceUpdate || Date.now() - window.lastPriceUpdate > 30000) { // Update prices every 30 seconds max
-            loadTokenPrices();
+            if (!window.lastPriceUpdate || Date.now() - window.lastPriceUpdate > 15000) { // Update prices every 15 seconds max
+                loadTokenPrices();
                 window.lastPriceUpdate = Date.now();
             }
             
